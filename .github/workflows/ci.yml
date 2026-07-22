@@ -1,0 +1,171 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Facturatix Contracts — CI/CD Pipeline (NuGet Package)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# DESCRIPTION
+# ───────────
+# Builds, tests, and publishes the Facturatix.Contracts NuGet package to
+# GitHub Packages (nuget.pkg.github.com).
+#
+# TRIGGERS
+# ────────
+# • Push to `main`         → Build + publish package
+# • Pull request to `main` → Build only (no publish)
+# • workflow_dispatch       → Manual publish with optional version override
+#
+# VERSIONING
+# ──────────
+# Version is read from the .csproj <Version> property.
+# Override via workflow_dispatch input or by bumping the csproj before merge.
+#
+# CONSUMING THE PACKAGE
+# ─────────────────────
+# Add a nuget.config to consuming repos:
+#
+#   <?xml version="1.0" encoding="utf-8"?>
+#   <configuration>
+#     <packageSources>
+#       <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+#       <add key="github" value="https://nuget.pkg.github.com/Facturatix/index.json" />
+#     </packageSources>
+#     <packageSourceCredentials>
+#       <github>
+#         <add key="Username" value="USERNAME" />
+#         <add key="ClearTextPassword" value="GH_TOKEN" />
+#       </github>
+#     </packageSourceCredentials>
+#   </configuration>
+#
+# In CI, use GITHUB_TOKEN for authentication automatically.
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version_suffix:
+        description: "Version suffix (e.g., beta.1). Leave empty for release version."
+        required: false
+        type: string
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  PACKAGE_PROJECT: src/Facturatix.Contracts/Facturatix.Contracts.csproj
+
+# Cancel in-progress runs for the same branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 1: Build & Test
+  # ═══════════════════════════════════════════════════════════════════════════
+  build:
+    name: Build & Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.PACKAGE_PROJECT }}
+
+      - name: Build
+        run: dotnet build ${{ env.PACKAGE_PROJECT }} --no-restore --configuration Release /p:TreatWarningsAsErrors=true
+
+      # Validate the package can be created successfully
+      - name: Pack (dry run)
+        run: dotnet pack ${{ env.PACKAGE_PROJECT }} --no-build --configuration Release --output ./nupkg
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: ./nupkg/*.nupkg
+          retention-days: 7
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 2: Publish to GitHub Packages
+  # ═══════════════════════════════════════════════════════════════════════════
+  publish:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build
+    # Only publish on push to main or manual dispatch (not on PRs)
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      # Determine version: use suffix from dispatch input if provided
+      - name: Determine version
+        id: version
+        run: |
+          VERSION=$(grep -oP '(?<=<Version>)[^<]+' ${{ env.PACKAGE_PROJECT }})
+          SUFFIX="${{ inputs.version_suffix }}"
+          if [ -n "$SUFFIX" ]; then
+            FULL_VERSION="${VERSION}-${SUFFIX}"
+          else
+            FULL_VERSION="$VERSION"
+          fi
+          echo "version=$FULL_VERSION" >> $GITHUB_OUTPUT
+          echo "## 📦 Package Version: $FULL_VERSION" >> $GITHUB_STEP_SUMMARY
+
+      - name: Pack
+        run: |
+          dotnet pack ${{ env.PACKAGE_PROJECT }} \
+            --configuration Release \
+            --output ./nupkg \
+            /p:PackageVersion=${{ steps.version.outputs.version }} \
+            /p:ContinuousIntegrationBuild=true
+
+      - name: Push to GitHub Packages
+        run: |
+          dotnet nuget push ./nupkg/*.nupkg \
+            --api-key ${{ secrets.GITHUB_TOKEN }} \
+            --source "https://nuget.pkg.github.com/Facturatix/index.json" \
+            --skip-duplicate
+
+      - name: Publish summary
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Package Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Package** | \`Facturatix.Contracts\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version** | \`${{ steps.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Feed** | \`https://nuget.pkg.github.com/Facturatix/index.json\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Install" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "dotnet add package Facturatix.Contracts --version ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

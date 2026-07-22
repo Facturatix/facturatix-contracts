@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Package identity -->
+    <PackageId>Facturatix.Contracts</PackageId>
+    <RootNamespace>Facturatix.Contracts</RootNamespace>
+    <AssemblyName>Facturatix.Contracts</AssemblyName>
+
+    <!-- Versioning: managed by CI/CD (GitVersion or manual bump) -->
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+
+    <!-- NuGet package metadata -->
+    <Authors>Facturatix</Authors>
+    <Company>Facturatix</Company>
+    <Description>Shared contract constants (status values, enums) for the Facturatix platform. Used by facturatix-api and facturatix-generator to ensure consistency across services.</Description>
+    <PackageTags>facturatix;contracts;shared;constants</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/Facturatix/facturatix-contracts</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <!-- Build settings -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IsPackable>true</IsPackable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!-- Deterministic builds for reproducibility -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+
+    <!-- SourceLink for debugging into package source -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- SourceLink: enables consumers to step into Contracts source code -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <!-- Include README in the NuGet package -->
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+</Project>
