@@ -118,10 +118,7 @@ export const COMPLETION_MODES = {
 
 export const DEFAULT_COMPLETION_MODE = COMPLETION_MODES.ALL
 
-export const ALL_COMPLETION_MODES: readonly string[] = [
-  COMPLETION_MODES.ALL,
-  COMPLETION_MODES.ANY
-]
+export const ALL_COMPLETION_MODES: readonly string[] = [COMPLETION_MODES.ALL, COMPLETION_MODES.ANY]
 
 /** Branch label of an execution edge. */
 export const EDGE_BRANCHES = {

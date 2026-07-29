@@ -12,5 +12,8 @@ import { fileURLToPath } from 'node:url'
 
 const dist = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 
-writeFileSync(join(dist, 'cjs', 'package.json'), JSON.stringify({ type: 'commonjs' }, null, 2) + '\n')
+writeFileSync(
+  join(dist, 'cjs', 'package.json'),
+  JSON.stringify({ type: 'commonjs' }, null, 2) + '\n'
+)
 writeFileSync(join(dist, 'esm', 'package.json'), JSON.stringify({ type: 'module' }, null, 2) + '\n')

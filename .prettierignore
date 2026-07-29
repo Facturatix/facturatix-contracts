@@ -1,0 +1,13 @@
+dist
+node_modules
+nupkg
+pnpm-lock.yaml
+tsconfig.json
+tsconfig.*.json
+
+# The C# half of the package.
+src/Facturatix.Contracts
+
+# Contract data, not code. The fixtures are the corpus three stacks validate against and the
+# manifest is generated; reformatting either would produce a diff that looks like a contract change.
+schemas

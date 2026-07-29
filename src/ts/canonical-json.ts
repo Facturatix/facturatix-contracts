@@ -43,17 +43,20 @@ export function canonicalize(json: string): string {
 export function canonicalizeValue(value: unknown): string {
   if (value === null || value === undefined) return 'null'
 
-  const type = typeof value
-  if (type === 'boolean') return value ? 'true' : 'false'
-  if (type === 'number') return canonicalNumber(value as number)
-  if (type === 'string') return JSON.stringify(value)
+  // Narrowed inline rather than through a `const type = typeof value`. Storing the tag in a
+  // variable stops TypeScript narrowing `value`, which left the boolean branch operating on
+  // `unknown` — it happened to work, but nothing checked that the guard and the branch agreed, and
+  // the number branch needed an `as number` to compensate.
+  if (typeof value === 'boolean') return value ? 'true' : 'false'
+  if (typeof value === 'number') return canonicalNumber(value)
+  if (typeof value === 'string') return JSON.stringify(value)
 
   if (Array.isArray(value)) {
     return `[${value.map((item) => canonicalizeValue(item)).join(',')}]`
   }
 
-  if (type === 'object') {
-    const record = value as Record<string, unknown>
+  if (typeof value === 'object') {
+    const record: Record<string, unknown> = value as Record<string, unknown>
     // Default Array#sort compares UTF-16 code units, which is the ordering RFC 8785 mandates and
     // exactly what string.CompareOrdinal does on the C# side.
     const keys = Object.keys(record).sort()
@@ -61,7 +64,17 @@ export function canonicalizeValue(value: unknown): string {
     return `{${members.join(',')}}`
   }
 
-  return JSON.stringify(value) ?? 'null'
+  // Everything reachable here — a function, a symbol, a bigint — has no JSON representation.
+  //
+  // The previous fallback emitted `'null'`, which looks harmless and is not: `JSON.stringify`
+  // *omits* an object key whose value is a function rather than writing null for it. The Modeler
+  // would have hashed `{"k":null}` while the API, hashing the serialized payload it received,
+  // hashed `{}` — and the publication would be rejected as corrupted in transit with nothing
+  // pointing at the cause. Refusing is the only answer that cannot produce two different hashes for
+  // one document.
+  throw new TypeError(
+    `A ${typeof value} has no JSON representation and cannot appear in a recipe document.`
+  )
 }
 
 /**

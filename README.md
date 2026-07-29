@@ -6,7 +6,7 @@ directory and the same version number, published from the same commit.
 
 ## Why two packages
 
-Three codebases have to agree on what a recipe *is*: the Modeler writes one, the API validates and
+Three codebases have to agree on what a recipe _is_: the Modeler writes one, the API validates and
 stores it, the Generator executes it. While that agreement lived only in prose, the three drifted —
 the Modeler emitted `static_key` where the Generator read `value`, `timeout_ms` meant a sleep in one
 place and a deadline in another, and no notion of "the portal confirmed" existed anywhere, so a run
@@ -17,14 +17,14 @@ and both implementations of the validator must reproduce the same verdict on it.
 
 ## What's included
 
-| Namespace / module                          | Contents                                                                                               |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `schemas/recipe-execution.schema.v2.json`   | The recipe execution contract v2 (JSON Schema 2020-12) plus the semantic rules it cannot express        |
-| `schemas/fixtures/`                         | 15 fixtures and a generated manifest with each one's verdict and canonical hash                         |
-| `Facturatix.Contracts.Recipes`              | `RecipeSchemaV2`, `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, `RecipeContractResources`           |
-| `Facturatix.Contracts.Errors`               | `ApiErrorCodes` — the machine-readable `code` carried by every API `ProblemDetails`                     |
-| `Facturatix.Contracts.Tickets` / `.Recipes` | Ticket and recipe-version lifecycle status constants                                                    |
-| `@facturatix/contracts`                     | TypeScript mirror of the above, plus `@facturatix/contracts/fixtures` for loading the corpus in tests   |
+| Namespace / module                          | Contents                                                                                              |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `schemas/recipe-execution.schema.v2.json`   | The recipe execution contract v2 (JSON Schema 2020-12) plus the semantic rules it cannot express      |
+| `schemas/fixtures/`                         | 15 fixtures and a generated manifest with each one's verdict and canonical hash                       |
+| `Facturatix.Contracts.Recipes`              | `RecipeSchemaV2`, `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, `RecipeContractResources`         |
+| `Facturatix.Contracts.Errors`               | `ApiErrorCodes` — the machine-readable `code` carried by every API `ProblemDetails`                   |
+| `Facturatix.Contracts.Tickets` / `.Recipes` | Ticket and recipe-version lifecycle status constants                                                  |
+| `@facturatix/contracts`                     | TypeScript mirror of the above, plus `@facturatix/contracts/fixtures` for loading the corpus in tests |
 
 ## The recipe execution contract v2
 
@@ -68,7 +68,7 @@ Rules worth knowing before authoring one:
    deadline.
 3. **`press.key` is the only name for the key.** Not `static_key`, not `value`.
 4. **The action allowlist is short on purpose**: `goto, click, fill, select, check, uncheck, press,
-   wait, wait_selector`. `dialog_accept`, `dialog_dismiss`, `popup`, `custom`, `upload` and
+wait, wait_selector`. `dialog_accept`, `dialog_dismiss`, `popup`, `custom`, `upload` and
    `dblclick` are rejected — they are no-ops in the Generator, so allowing them would guarantee a
    false success. `download` is excluded permanently: Facturatix does not handle fiscal files.
 5. **At least one terminal assertion is mandatory.** Finishing the last step is not evidence that
@@ -139,9 +139,16 @@ dotnet pack  src/Facturatix.Contracts/Facturatix.Contracts.csproj -c Release -o 
 
 # Node
 pnpm install
+pnpm run lint        # type-aware ESLint + Prettier
+pnpm run typecheck   # both the CommonJS and the ESM targets
 pnpm run build
 pnpm run verify      # asserts the TypeScript validator reproduces the C#-generated manifest
 ```
+
+The lint rules are type-aware on purpose. These files are the reference implementation three
+services agree on, so an `any` that slips into the validator would make it accept a document the C#
+half rejects — and the fixture corpus would not catch it, because both halves would be reading the
+same fixture through different amounts of checking.
 
 After changing a fixture, regenerate the manifest and commit both together:
 
@@ -156,6 +163,12 @@ dotnet run --project tools/generate-manifest -- schemas/fixtures
 - **PATCH** — new constants, clarified messages
 - **MINOR** — new optional contract fields, new error codes
 - **MAJOR** — renaming or removing anything a consumer branches on
+
+**2.0.1** makes the TypeScript canonicalizer refuse a value with no JSON representation — a
+function or a symbol — instead of serializing it as `null`. `JSON.stringify` omits such a key
+entirely, so the old fallback produced a hash the API could never reproduce from the payload it
+received, and the publication would have been rejected as corrupted in transit with nothing pointing
+at the cause.
 
 **2.0.0** introduces the recipe execution contract v2 and drops the `netstandard2.0` target. Both
 consumers are `net10.0`, and targeting the framework directly is what lets the validator and the

@@ -40,19 +40,19 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - "**.md"
-      - "LICENSE"
+      - '**.md'
+      - 'LICENSE'
   pull_request:
     branches: [main]
   workflow_dispatch:
     inputs:
       version_suffix:
-        description: "Version suffix (e.g., beta.1). Leave empty for release version."
+        description: 'Version suffix (e.g., beta.1). Leave empty for release version.'
         required: false
         type: string
 
 env:
-  DOTNET_VERSION: "10.0.x"
+  DOTNET_VERSION: '10.0.x'
   PACKAGE_PROJECT: src/Facturatix.Contracts/Facturatix.Contracts.csproj
 
 # Cancel in-progress runs for the same branch/PR
@@ -118,6 +118,12 @@ jobs:
       - name: Install npm dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Type check
+        run: pnpm run typecheck
+
       - name: Build npm package
         run: pnpm run build
 
@@ -169,7 +175,7 @@ jobs:
         with:
           node-version-file: .node-version
           registry-url: https://npm.pkg.github.com
-          scope: "@facturatix"
+          scope: '@facturatix'
           cache: pnpm
 
       # Determine the version once and use it for both registries.

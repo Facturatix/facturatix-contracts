@@ -19,13 +19,15 @@
     <AssemblyName>Facturatix.Contracts</AssemblyName>
 
     <!--
-      Versioning: managed by CI/CD. 2.0.0 introduces the recipe execution contract v2. The npm twin
-      (@facturatix/contracts) publishes from the same tag with the same version, so one number
-      identifies the contract in both ecosystems.
+      Versioning: managed by CI/CD. 2.0.0 introduced the recipe execution contract v2; 2.0.1 makes
+      the TypeScript canonicalizer refuse values with no JSON representation instead of emitting
+      `null` for them — a hash the API could never reproduce. The npm twin (@facturatix/contracts)
+      publishes from the same commit with the same version, so one number identifies the contract in
+      both ecosystems.
     -->
-    <Version>2.0.0</Version>
-    <AssemblyVersion>2.0.0.0</AssemblyVersion>
-    <FileVersion>2.0.0.0</FileVersion>
+    <Version>2.0.1</Version>
+    <AssemblyVersion>2.0.1.0</AssemblyVersion>
+    <FileVersion>2.0.1.0</FileVersion>
 
     <!-- NuGet package metadata -->
     <Authors>Facturatix</Authors>

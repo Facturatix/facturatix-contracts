@@ -146,10 +146,15 @@ export function validateRecipeValue(root: unknown): RecipeValidationResult {
 
 // ── schema_version ────────────────────────────────────────────────────────────────────────────
 
-function validateSchemaVersion(root: Record<string, unknown>, issues: RecipeValidationIssue[]): void {
+function validateSchemaVersion(
+  root: Record<string, unknown>,
+  issues: RecipeValidationIssue[]
+): void {
   const key = ROOT_PROPERTIES.SCHEMA_VERSION
   if (!(key in root)) {
-    issues.push(issue(CODES.SCHEMA_VERSION_MISSING, key, 'The document does not declare schema_version.'))
+    issues.push(
+      issue(CODES.SCHEMA_VERSION_MISSING, key, 'The document does not declare schema_version.')
+    )
     return
   }
 
@@ -176,7 +181,9 @@ function validateVariables(
   if (declared === undefined) return catalog
 
   if (!Array.isArray(declared)) {
-    issues.push(issue(CODES.VARIABLE_INVALID, ROOT_PROPERTIES.VARIABLES, 'variables must be an array.'))
+    issues.push(
+      issue(CODES.VARIABLE_INVALID, ROOT_PROPERTIES.VARIABLES, 'variables must be an array.')
+    )
     return catalog
   }
 
@@ -188,12 +195,21 @@ function validateVariables(
       return
     }
 
-    rejectUnknownProperties(entry, ['name', 'source', 'required', 'pattern', 'description'], path, issues)
+    rejectUnknownProperties(
+      entry,
+      ['name', 'source', 'required', 'pattern', 'description'],
+      path,
+      issues
+    )
 
     const name = readString(entry, 'name')
     if (name === null || !VARIABLE_NAME_PATTERN.test(name)) {
       issues.push(
-        issue(CODES.VARIABLE_INVALID, `${path}.name`, 'A variable name must match ^[a-z][a-z0-9_]*$.')
+        issue(
+          CODES.VARIABLE_INVALID,
+          `${path}.name`,
+          'A variable name must match ^[a-z][a-z0-9_]*$.'
+        )
       )
     } else if (catalog.names.has(name)) {
       issues.push(
@@ -261,7 +277,9 @@ function validateActions(
   }
 
   if (declared.length === 0) {
-    issues.push(issue(CODES.ACTIONS_EMPTY, ROOT_PROPERTIES.ACTIONS, 'A recipe needs at least one action.'))
+    issues.push(
+      issue(CODES.ACTIONS_EMPTY, ROOT_PROPERTIES.ACTIONS, 'A recipe needs at least one action.')
+    )
     return nodes
   }
 
@@ -354,12 +372,18 @@ function validateCommonActionFields(
 
   if ('continue_on_error' in action && typeof action.continue_on_error !== 'boolean') {
     issues.push(
-      issue(CODES.ACTION_FIELD_INVALID, `${path}.continue_on_error`, 'continue_on_error must be a boolean.')
+      issue(
+        CODES.ACTION_FIELD_INVALID,
+        `${path}.continue_on_error`,
+        'continue_on_error must be a boolean.'
+      )
     )
   }
 
   if ('optional' in action && typeof action.optional !== 'boolean') {
-    issues.push(issue(CODES.ACTION_FIELD_INVALID, `${path}.optional`, 'optional must be a boolean.'))
+    issues.push(
+      issue(CODES.ACTION_FIELD_INVALID, `${path}.optional`, 'optional must be a boolean.')
+    )
   }
 }
 
@@ -551,7 +575,9 @@ function validateCondition(
   const condition = action.condition
 
   if (!isPlainObject(condition)) {
-    issues.push(issue(CODES.CONDITION_TYPE_UNKNOWN, conditionPath, 'A condition must be an object.'))
+    issues.push(
+      issue(CODES.CONDITION_TYPE_UNKNOWN, conditionPath, 'A condition must be an object.')
+    )
     return true
   }
 
@@ -570,7 +596,12 @@ function validateCondition(
   }
 
   if (type === CONDITION_TYPES.URL_MATCHES) {
-    rejectUnknownProperties(condition, ['type', 'pattern', 'check_timeout_ms'], conditionPath, issues)
+    rejectUnknownProperties(
+      condition,
+      ['type', 'pattern', 'check_timeout_ms'],
+      conditionPath,
+      issues
+    )
 
     const pattern = readString(condition, 'pattern')
     if (pattern === null || pattern.length === 0) {
@@ -583,7 +614,12 @@ function validateCondition(
       )
     }
   } else {
-    rejectUnknownProperties(condition, ['type', 'locator', 'check_timeout_ms'], conditionPath, issues)
+    rejectUnknownProperties(
+      condition,
+      ['type', 'locator', 'check_timeout_ms'],
+      conditionPath,
+      issues
+    )
 
     if (!('locator' in condition)) {
       issues.push(
@@ -621,7 +657,9 @@ function validateEdgesAndGraph(
   const declared = root[ROOT_PROPERTIES.EDGES]
   if (declared !== undefined) {
     if (!Array.isArray(declared)) {
-      issues.push(issue(CODES.EDGE_ENDPOINT_UNKNOWN, ROOT_PROPERTIES.EDGES, 'edges must be an array.'))
+      issues.push(
+        issue(CODES.EDGE_ENDPOINT_UNKNOWN, ROOT_PROPERTIES.EDGES, 'edges must be an array.')
+      )
       return
     }
 
@@ -758,13 +796,9 @@ function validateEdgesAndGraph(
  * Iterative depth-first walk that both detects cycles and collects the reachable set. Iterative
  * rather than recursive so a pathological recipe cannot overflow the stack.
  */
-function hasCycle(
-  root: string,
-  adjacency: Map<string, string[]>,
-  reachable: Set<string>
-): boolean {
+function hasCycle(root: string, adjacency: Map<string, string[]>, reachable: Set<string>): boolean {
   const onPath = new Set<string>()
-  const stack: Array<{ node: string; next: number }> = [{ node: root, next: 0 }]
+  const stack: { node: string; next: number }[] = [{ node: root, next: 0 }]
 
   reachable.add(root)
   onPath.add(root)

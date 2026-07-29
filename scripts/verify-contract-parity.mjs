@@ -18,7 +18,9 @@ import { dirname, join } from 'node:path'
 const require = createRequire(import.meta.url)
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 
-const { validateRecipeDocument, computeHash } = require(join(packageRoot, 'dist', 'cjs', 'index.js'))
+const { validateRecipeDocument, computeHash } = require(
+  join(packageRoot, 'dist', 'cjs', 'index.js')
+)
 const resources = require(join(packageRoot, 'dist', 'cjs', 'contract-resources.js'))
 
 const manifest = resources.readManifest()
@@ -66,4 +68,6 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
-console.log(`Contract parity OK — ${manifest.fixtures.length} fixtures agree across C# and TypeScript.`)
+console.log(
+  `Contract parity OK — ${manifest.fixtures.length} fixtures agree across C# and TypeScript.`
+)
