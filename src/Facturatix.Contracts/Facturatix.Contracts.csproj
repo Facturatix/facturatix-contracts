@@ -1,7 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <!--
+      net10.0 only. Both consumers (facturatix-api and facturatix-generator) are net10.0, and
+      targeting the framework directly is what lets the recipe validator and the RFC 8785
+      canonicalizer use System.Text.Json without adding a single package dependency to a package
+      whose whole purpose is to be a dependency. The 1.x line targeted netstandard2.0; dropping
+      that target is part of the 2.0.0 major bump.
+    -->
+    <TargetFramework>net10.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -11,16 +18,20 @@
     <RootNamespace>Facturatix.Contracts</RootNamespace>
     <AssemblyName>Facturatix.Contracts</AssemblyName>
 
-    <!-- Versioning: managed by CI/CD (GitVersion or manual bump) -->
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <!--
+      Versioning: managed by CI/CD. 2.0.0 introduces the recipe execution contract v2. The npm twin
+      (@facturatix/contracts) publishes from the same tag with the same version, so one number
+      identifies the contract in both ecosystems.
+    -->
+    <Version>2.0.0</Version>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <FileVersion>2.0.0.0</FileVersion>
 
     <!-- NuGet package metadata -->
     <Authors>Facturatix</Authors>
     <Company>Facturatix</Company>
-    <Description>Shared contract constants (status values, enums) for the Facturatix platform. Used by facturatix-api and facturatix-generator to ensure consistency across services.</Description>
-    <PackageTags>facturatix;contracts;shared;constants</PackageTags>
+    <Description>Canonical contracts for the Facturatix platform: the recipe execution schema v2 with its reference validator and RFC 8785 canonical hash, machine-readable API error codes, and shared status constants. Consumed by facturatix-api and facturatix-generator; the TypeScript twin ships as @facturatix/contracts.</Description>
+    <PackageTags>facturatix;contracts;shared;constants;json-schema</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/Facturatix/facturatix-contracts</RepositoryUrl>
@@ -50,6 +61,27 @@
   <!-- Include README in the NuGet package -->
   <ItemGroup>
     <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <!--
+    The schema and the fixtures ship two ways on purpose.
+
+    EmbeddedResource is what consumers read at runtime through RecipeContractResources. It cannot be
+    defeated by a missing copy-to-output step, so a contract test can never go green by silently
+    finding zero fixtures — the failure mode that makes a "gate" decorative.
+
+    contentFiles puts the same files on disk next to the consuming project, which is what editors
+    and JSON Schema tooling need to resolve the schema without running code.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="../../schemas/**/*.json"
+                      LogicalName="schemas/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="../../schemas/**/*.json"
+             Pack="true"
+             PackagePath="contentFiles/any/net10.0/schemas/%(RecursiveDir)"
+             PackageCopyToOutput="true"
+             CopyToOutputDirectory="PreserveNewest"
+             Link="schemas/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

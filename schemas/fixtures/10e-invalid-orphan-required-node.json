@@ -1,0 +1,31 @@
+{
+  "schema_version": 2,
+  "variables": [{ "name": "rfc", "source": "user.fiscal.rfc", "required": true }],
+  "actions": [
+    { "id": "open", "action": "goto", "url": "https://facturacion.comercio.mx/" },
+    {
+      "id": "fill-rfc",
+      "action": "fill",
+      "locator": { "strategy": "role", "role": "textbox", "name": "RFC" },
+      "value": "{{rfc}}"
+    },
+    {
+      "id": "submit",
+      "action": "click",
+      "locator": { "strategy": "role", "role": "button", "name": "Generar" }
+    },
+    {
+      "id": "retry-banner",
+      "action": "click",
+      "locator": { "strategy": "text", "value": "Reintentar" }
+    }
+  ],
+  "edges": [
+    { "from": "open", "to": "fill-rfc" },
+    { "from": "fill-rfc", "to": "submit" },
+    { "from": "retry-banner", "to": "retry-banner" }
+  ],
+  "completion": {
+    "assertions": [{ "type": "url_matches", "pattern": "/confirmacion" }]
+  }
+}

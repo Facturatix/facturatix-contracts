@@ -1,0 +1,50 @@
+{
+  "schema_version": 2,
+  "variables": [
+    { "name": "rfc", "source": "user.fiscal.rfc", "required": true },
+    { "name": "total", "source": "ticket.extracted.total", "required": true }
+  ],
+  "actions": [
+    { "id": "open", "action": "goto", "url": "https://facturacion.comercio.mx/" },
+    {
+      "id": "fill-rfc",
+      "action": "fill",
+      "locator": { "strategy": "role", "role": "textbox", "name": "RFC" },
+      "value": "{{rfc}}"
+    },
+    {
+      "id": "fill-total",
+      "action": "fill",
+      "locator": { "strategy": "label", "value": "Importe total" },
+      "value": "{{total}}"
+    },
+    {
+      "id": "submit",
+      "action": "click",
+      "locator": { "strategy": "role", "role": "button", "name": "Enviar solicitud" }
+    },
+    {
+      "id": "await-outcome",
+      "action": "wait_selector",
+      "locator": { "strategy": "test_id", "value": "resultado-solicitud" },
+      "timeout_ms": 30000
+    }
+  ],
+  "edges": [
+    { "from": "open", "to": "fill-rfc" },
+    { "from": "fill-rfc", "to": "fill-total" },
+    { "from": "fill-total", "to": "submit" },
+    { "from": "submit", "to": "await-outcome" }
+  ],
+  "completion": {
+    "mode": "all",
+    "assertions": [
+      {
+        "type": "selector_text",
+        "locator": { "strategy": "test_id", "value": "resultado-solicitud" },
+        "contains": "La solicitud de facturación se completó"
+      },
+      { "type": "url_matches", "pattern": "/confirmacion" }
+    ]
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "schema_version": 2,
+  "variables": [{ "name": "rfc", "source": "user.fiscal.rfc", "required": true }],
+  "actions": [
+    { "id": "open", "action": "goto", "url": "https://facturacion.comercio.mx/" },
+    {
+      "id": "cookie-banner",
+      "action": "click",
+      "locator": { "strategy": "role", "role": "button", "name": "Aceptar cookies" },
+      "condition": {
+        "type": "element_exists",
+        "locator": { "strategy": "role", "role": "button", "name": "Aceptar cookies" },
+        "check_timeout_ms": 3000
+      }
+    },
+    {
+      "id": "fill-rfc",
+      "action": "fill",
+      "locator": { "strategy": "role", "role": "textbox", "name": "RFC" },
+      "value": "{{rfc}}"
+    },
+    {
+      "id": "submit",
+      "action": "click",
+      "locator": { "strategy": "role", "role": "button", "name": "Generar" }
+    }
+  ],
+  "edges": [
+    { "from": "open", "to": "cookie-banner" },
+    { "from": "cookie-banner", "to": "fill-rfc", "branch": "true" },
+    { "from": "cookie-banner", "to": "fill-rfc", "branch": "false" },
+    { "from": "fill-rfc", "to": "submit" }
+  ],
+  "completion": {
+    "assertions": [
+      {
+        "type": "selector_text",
+        "locator": { "strategy": "css", "value": "#estado" },
+        "contains": "solicitud completada"
+      }
+    ]
+  }
+}

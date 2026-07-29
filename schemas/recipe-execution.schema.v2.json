@@ -1,0 +1,353 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.facturatix.com/schemas/recipe-execution.schema.v2.json",
+  "title": "Facturatix recipe execution contract v2",
+  "description": "Canonical execution contract for an invoice portal recipe. This document is the single source of truth shared by facturatix-modeler (producer), facturatix-api (validator/store) and facturatix-generator (executor). Structural rules live here; the graph and cross-reference rules that JSON Schema cannot express are listed under x-semantic-rules and are enforced by the validator shipped with this package.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "actions", "completion"],
+  "properties": {
+    "schema_version": {
+      "description": "Contract version. Must also be persisted in InvoiceRecipeVersions.StepsSchemaVersion.",
+      "const": 2
+    },
+    "variables": {
+      "description": "Values resolved before execution. A recipe with no variables is legal.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/variable" }
+    },
+    "browser_defaults": { "$ref": "#/$defs/browserDefaults" },
+    "actions": {
+      "description": "Executable steps. Order is defined by edges, not by array position.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/action" }
+    },
+    "edges": {
+      "description": "Execution graph. An empty edge list means strictly linear execution in array order.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" }
+    },
+    "completion": { "$ref": "#/$defs/completion" },
+    "ui_metadata": {
+      "description": "Producer-only payload (canvas layout). Executors MUST ignore it. It is part of the canonical hash because it is part of the stored document.",
+      "type": "object"
+    }
+  },
+
+  "x-semantic-rules": [
+    "action-id-unique: every action.id is non-empty and unique within the document.",
+    "edge-endpoints-exist: every edge.from and edge.to references a declared action.id.",
+    "single-root: exactly one action has no incoming edge (the entry point).",
+    "acyclic: the execution graph contains no cycles.",
+    "no-orphan-required: every action with optional=false is reachable from the root.",
+    "branch-requires-condition: edges with branch 'true' or 'false' may only leave an action that declares a condition, and a conditional action must not use the 'next' branch.",
+    "condition-known: an action condition must use a declared condition type; an unknown type invalidates the recipe (fail-closed at validation, never at execution).",
+    "assertion-shape: selector_text assertions require locator + contains; url_matches assertions require pattern.",
+    "delivery-binding-resolvable: when delivery.mode is portal_email, destination_binding must equal the source of a declared variable."
+  ],
+
+  "$defs": {
+    "variableSource": {
+      "description": "Canonical origin of a variable value. Only these three namespaces exist.",
+      "type": "string",
+      "pattern": "^(user\\.fiscal\\.[a-z][a-z0-9_]*|user\\.[a-z][a-z0-9_]*|ticket\\.extracted\\.[a-z][a-z0-9_]*)$"
+    },
+
+    "variable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "source"],
+      "properties": {
+        "name": {
+          "description": "Identifier used inside {{ }} placeholders.",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "source": { "$ref": "#/$defs/variableSource" },
+        "required": { "type": "boolean", "default": false },
+        "pattern": {
+          "description": "ECMA-262 regular expression the resolved value must match.",
+          "type": "string",
+          "minLength": 1
+        },
+        "description": { "type": "string" }
+      }
+    },
+
+    "browserDefaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "viewport_width": { "type": "integer", "minimum": 320, "maximum": 4096 },
+        "viewport_height": { "type": "integer", "minimum": 240, "maximum": 4096 },
+        "locale": { "type": "string", "minLength": 2 },
+        "timezone": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "locator": {
+      "description": "Structured element reference. Playwright source strings are never accepted.",
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["strategy"],
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": ["role", "css", "label", "text", "test_id"]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "strategy": { "const": "role" } }, "required": ["strategy"] },
+          "then": {
+            "required": ["role"],
+            "properties": {
+              "role": { "type": "string", "minLength": 1 },
+              "name": { "type": "string" },
+              "exact": { "type": "boolean", "default": false }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "strategy": { "enum": ["css", "label", "text", "test_id"] } },
+            "required": ["strategy"]
+          },
+          "then": {
+            "required": ["value"],
+            "properties": {
+              "value": { "type": "string", "minLength": 1 },
+              "exact": { "type": "boolean", "default": false }
+            }
+          }
+        }
+      ]
+    },
+
+    "condition": {
+      "description": "Gate evaluated before the action runs. An unknown type invalidates the recipe.",
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["element_exists", "element_absent", "url_matches"]
+        },
+        "check_timeout_ms": { "type": "integer", "minimum": 0, "maximum": 120000 }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "enum": ["element_exists", "element_absent"] } },
+            "required": ["type"]
+          },
+          "then": {
+            "required": ["locator"],
+            "properties": { "locator": { "$ref": "#/$defs/locator" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "url_matches" } }, "required": ["type"] },
+          "then": {
+            "required": ["pattern"],
+            "properties": { "pattern": { "type": "string", "minLength": 1 } }
+          }
+        }
+      ]
+    },
+
+    "actionCommon": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "action": { "type": "string" },
+        "description": { "type": "string" },
+        "optional": {
+          "description": "When true the action may be unreachable from the root (branch-only helper).",
+          "type": "boolean",
+          "default": false
+        },
+        "timeout_ms": {
+          "description": "Maximum time the executor waits for the action to succeed. Never a sleep.",
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 300000
+        },
+        "continue_on_error": { "type": "boolean", "default": false },
+        "retry_count": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "retry_delay_ms": { "type": "integer", "minimum": 0, "maximum": 60000 },
+        "condition": { "$ref": "#/$defs/condition" }
+      }
+    },
+
+    "action": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["id", "action"],
+      "allOf": [
+        { "$ref": "#/$defs/actionCommon" },
+        {
+          "properties": {
+            "action": {
+              "description": "Allowlist v2. Any other verb invalidates the recipe, including no-ops such as dialog_accept.",
+              "enum": [
+                "goto",
+                "click",
+                "fill",
+                "select",
+                "check",
+                "uncheck",
+                "press",
+                "wait",
+                "wait_selector"
+              ]
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "goto" } }, "required": ["action"] },
+          "then": {
+            "required": ["url"],
+            "properties": { "url": { "type": "string", "minLength": 1 } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "action": { "enum": ["click", "check", "uncheck", "wait_selector"] } },
+            "required": ["action"]
+          },
+          "then": {
+            "required": ["locator"],
+            "properties": { "locator": { "$ref": "#/$defs/locator" } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "action": { "enum": ["fill", "select"] } },
+            "required": ["action"]
+          },
+          "then": {
+            "required": ["locator", "value"],
+            "properties": {
+              "locator": { "$ref": "#/$defs/locator" },
+              "value": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "press" } }, "required": ["action"] },
+          "then": {
+            "required": ["locator", "key"],
+            "properties": {
+              "locator": { "$ref": "#/$defs/locator" },
+              "key": {
+                "description": "The only accepted name for the keyboard key.",
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "wait" } }, "required": ["action"] },
+          "then": {
+            "required": ["duration_ms"],
+            "properties": {
+              "duration_ms": {
+                "description": "Fixed sleep. Distinct from timeout_ms by design.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 120000
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to"],
+      "properties": {
+        "from": { "type": "string", "minLength": 1 },
+        "to": { "type": "string", "minLength": 1 },
+        "branch": {
+          "description": "'next' for unconditional flow; 'true'/'false' for the two exits of a conditional action.",
+          "type": "string",
+          "enum": ["next", "true", "false"],
+          "default": "next"
+        }
+      }
+    },
+
+    "assertion": {
+      "description": "Terminal evidence the portal must show. Without at least one, a recipe cannot be published.",
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["selector_text", "url_matches"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "selector_text" } }, "required": ["type"] },
+          "then": {
+            "required": ["locator", "contains"],
+            "properties": {
+              "locator": { "$ref": "#/$defs/locator" },
+              "contains": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "url_matches" } }, "required": ["type"] },
+          "then": {
+            "required": ["pattern"],
+            "properties": { "pattern": { "type": "string", "minLength": 1 } }
+          }
+        }
+      ]
+    },
+
+    "delivery": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["portal_email", "portal_confirmation"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "mode": { "const": "portal_email" } }, "required": ["mode"] },
+          "then": {
+            "required": ["destination_binding"],
+            "properties": { "destination_binding": { "$ref": "#/$defs/variableSource" } }
+          }
+        }
+      ]
+    },
+
+    "completion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assertions"],
+      "properties": {
+        "mode": {
+          "description": "'all' requires every assertion to hold; 'any' requires at least one.",
+          "type": "string",
+          "enum": ["all", "any"],
+          "default": "all"
+        },
+        "assertions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/assertion" }
+        },
+        "delivery": { "$ref": "#/$defs/delivery" }
+      }
+    }
+  }
+}

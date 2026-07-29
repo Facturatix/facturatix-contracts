@@ -1,0 +1,55 @@
+{
+  "schema_version": 2,
+  "variables": [
+    { "name": "rfc", "source": "user.fiscal.rfc", "required": true },
+    { "name": "ticket_folio", "source": "ticket.extracted.folio", "required": true }
+  ],
+  "actions": [
+    { "id": "open", "action": "goto", "url": "https://facturacion.comercio.mx/" },
+    {
+      "id": "has-saved-profile",
+      "action": "click",
+      "locator": { "strategy": "text", "value": "Usar datos guardados" },
+      "condition": {
+        "type": "element_exists",
+        "locator": { "strategy": "text", "value": "Usar datos guardados" },
+        "check_timeout_ms": 2000
+      }
+    },
+    {
+      "id": "fill-rfc",
+      "action": "fill",
+      "locator": { "strategy": "role", "role": "textbox", "name": "RFC" },
+      "value": "{{rfc}}"
+    },
+    {
+      "id": "fill-folio",
+      "action": "fill",
+      "locator": { "strategy": "label", "value": "Folio del ticket" },
+      "value": "{{ticket_folio}}"
+    },
+    {
+      "id": "submit",
+      "action": "click",
+      "locator": { "strategy": "role", "role": "button", "name": "Generar" }
+    }
+  ],
+  "edges": [
+    { "from": "open", "to": "has-saved-profile" },
+    { "from": "has-saved-profile", "to": "fill-folio", "branch": "true" },
+    { "from": "has-saved-profile", "to": "fill-rfc", "branch": "false" },
+    { "from": "fill-rfc", "to": "fill-folio" },
+    { "from": "fill-folio", "to": "submit" }
+  ],
+  "completion": {
+    "mode": "any",
+    "assertions": [
+      { "type": "url_matches", "pattern": "/comprobante" },
+      {
+        "type": "selector_text",
+        "locator": { "strategy": "test_id", "value": "estado-solicitud" },
+        "contains": "solicitud completada"
+      }
+    ]
+  }
+}

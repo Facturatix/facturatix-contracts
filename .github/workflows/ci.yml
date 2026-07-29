@@ -1,42 +1,36 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# Facturatix Contracts — CI/CD Pipeline (NuGet Package)
+# Facturatix Contracts — CI/CD Pipeline (NuGet + npm)
 # ═══════════════════════════════════════════════════════════════════════════════
 #
 # DESCRIPTION
 # ───────────
-# Builds, tests, and publishes the Facturatix.Contracts NuGet package to
-# GitHub Packages (nuget.pkg.github.com).
+# Builds, verifies and publishes the two halves of the platform contract:
+#
+#   • Facturatix.Contracts   → NuGet  (nuget.pkg.github.com/Facturatix)
+#   • @facturatix/contracts  → npm    (npm.pkg.github.com)
+#
+# Both carry the SAME `schemas/` directory and the SAME version number, published
+# from the same commit. That is the point: "which contract are we on" has to have
+# one answer in .NET and in Node, or the tri-stack gate in the consumers compares
+# two different documents and calls the agreement meaningful.
+#
+# THE PARITY JOB IS THE PRODUCT
+# ─────────────────────────────
+# The build job runs the C# validator and the TypeScript validator over the same
+# fixture corpus and requires both to reproduce the manifest — same verdict, same
+# validation codes, same RFC 8785 canonical hash. Publishing a package whose two
+# implementations disagree would ship a contract that is not one contract.
 #
 # TRIGGERS
 # ────────
-# • Push to `main`         → Build + publish package
-# • Pull request to `main` → Build only (no publish)
-# • workflow_dispatch       → Manual publish with optional version override
+# • Push to `main`         → Build + verify + publish both packages
+# • Pull request to `main` → Build + verify only
+# • workflow_dispatch      → Manual publish with optional version suffix
 #
 # VERSIONING
 # ──────────
-# Version is read from the .csproj <Version> property.
-# Override via workflow_dispatch input or by bumping the csproj before merge.
-#
-# CONSUMING THE PACKAGE
-# ─────────────────────
-# Add a nuget.config to consuming repos:
-#
-#   <?xml version="1.0" encoding="utf-8"?>
-#   <configuration>
-#     <packageSources>
-#       <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-#       <add key="github" value="https://nuget.pkg.github.com/Facturatix/index.json" />
-#     </packageSources>
-#     <packageSourceCredentials>
-#       <github>
-#         <add key="Username" value="USERNAME" />
-#         <add key="ClearTextPassword" value="GH_TOKEN" />
-#       </github>
-#     </packageSourceCredentials>
-#   </configuration>
-#
-# In CI, use GITHUB_TOKEN for authentication automatically.
+# The .csproj <Version> is the source of truth; the build fails if package.json
+# disagrees with it.
 #
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -72,12 +66,12 @@ permissions:
 
 jobs:
   # ═══════════════════════════════════════════════════════════════════════════
-  # Job 1: Build & Test
+  # Job 1: Build & Validate — both ecosystems, plus cross-stack parity
   # ═══════════════════════════════════════════════════════════════════════════
   build:
     name: Build & Validate
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -88,15 +82,57 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Restore dependencies
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      # ─── Version parity ─────────────────────────────────────────────────
+      # A NuGet package and an npm package that claim to be the same contract but
+      # carry different version numbers cannot be reasoned about downstream.
+      - name: Verify NuGet and npm versions match
+        run: |
+          CS_VERSION=$(grep -oP '(?<=<Version>)[^<]+' ${{ env.PACKAGE_PROJECT }})
+          NPM_VERSION=$(node -p "require('./package.json').version")
+          echo "csproj=$CS_VERSION package.json=$NPM_VERSION"
+          if [ "$CS_VERSION" != "$NPM_VERSION" ]; then
+            echo "::error::Version mismatch: csproj is $CS_VERSION but package.json is $NPM_VERSION"
+            exit 1
+          fi
+
+      # ─── .NET ───────────────────────────────────────────────────────────
+      - name: Restore .NET dependencies
         run: dotnet restore ${{ env.PACKAGE_PROJECT }}
 
-      - name: Build
+      - name: Build .NET package
         run: dotnet build ${{ env.PACKAGE_PROJECT }} --no-restore --configuration Release /p:TreatWarningsAsErrors=true
 
-      # Validate the package can be created successfully
       - name: Pack (dry run)
         run: dotnet pack ${{ env.PACKAGE_PROJECT }} --no-build --configuration Release --output ./nupkg
+
+      # ─── Node ───────────────────────────────────────────────────────────
+      - name: Install npm dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build npm package
+        run: pnpm run build
+
+      # ─── Cross-stack parity (the gate this repository exists for) ───────
+      - name: Verify the manifest is regenerable from the C# implementation
+        run: |
+          dotnet run --project tools/generate-manifest -- schemas/fixtures
+          if ! git diff --quiet -- schemas/fixtures/manifest.json; then
+            echo "::error::schemas/fixtures/manifest.json is stale. Regenerate it with 'dotnet run --project tools/generate-manifest -- schemas/fixtures' and commit the result."
+            git --no-pager diff -- schemas/fixtures/manifest.json
+            exit 1
+          fi
+
+      - name: Verify the TypeScript implementation reproduces the manifest
+        run: node scripts/verify-contract-parity.mjs
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
@@ -106,12 +142,12 @@ jobs:
           retention-days: 7
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # Job 2: Publish to GitHub Packages
+  # Job 2: Publish — one commit, both registries
   # ═══════════════════════════════════════════════════════════════════════════
   publish:
-    name: Publish to GitHub Packages
+    name: Publish packages
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: build
     # Only publish on push to main or manual dispatch (not on PRs)
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -125,7 +161,18 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      # Determine version: use suffix from dispatch input if provided
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          registry-url: https://npm.pkg.github.com
+          scope: "@facturatix"
+          cache: pnpm
+
+      # Determine the version once and use it for both registries.
       - name: Determine version
         id: version
         run: |
@@ -137,9 +184,10 @@ jobs:
             FULL_VERSION="$VERSION"
           fi
           echo "version=$FULL_VERSION" >> $GITHUB_OUTPUT
-          echo "## 📦 Package Version: $FULL_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Contract version: $FULL_VERSION" >> $GITHUB_STEP_SUMMARY
 
-      - name: Pack
+      # ─── NuGet ──────────────────────────────────────────────────────────
+      - name: Pack NuGet
         run: |
           dotnet pack ${{ env.PACKAGE_PROJECT }} \
             --configuration Release \
@@ -147,25 +195,35 @@ jobs:
             /p:PackageVersion=${{ steps.version.outputs.version }} \
             /p:ContinuousIntegrationBuild=true
 
-      - name: Push to GitHub Packages
+      - name: Push to GitHub Packages (NuGet)
         run: |
           dotnet nuget push ./nupkg/*.nupkg \
             --api-key ${{ secrets.GITHUB_TOKEN }} \
             --source "https://nuget.pkg.github.com/Facturatix/index.json" \
             --skip-duplicate
 
+      # ─── npm ────────────────────────────────────────────────────────────
+      - name: Install npm dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build npm package
+        run: pnpm run build
+
+      # `--no-git-checks`: the version is stamped in place from the csproj, so the
+      # working tree is intentionally dirty at this point.
+      - name: Publish to GitHub Packages (npm)
+        run: |
+          npm version ${{ steps.version.outputs.version }} --no-git-tag-version --allow-same-version
+          pnpm publish --no-git-checks --access restricted
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Publish summary
         run: |
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### ✅ Package Published" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Both halves published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Package** | \`Facturatix.Contracts\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Version** | \`${{ steps.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Feed** | \`https://nuget.pkg.github.com/Facturatix/index.json\` |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Install" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "dotnet add package Facturatix.Contracts --version ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "| Ecosystem | Package | Version |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|---------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| NuGet | \`Facturatix.Contracts\` | \`${{ steps.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| npm | \`@facturatix/contracts\` | \`${{ steps.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    // The CommonJS half of a dual build (tsconfig.esm.json emits the other). CJS is what plain
+    // Node and the fixtures entry point need — `contract-resources` resolves the schemas relative
+    // to `__dirname`. The ESM half exists because a bundler cannot statically analyse `export *`
+    // through TypeScript's CommonJS `__createBinding` output: shipping CJS alone made the Electron
+    // renderer build fail with "LOCATOR_STRATEGIES is not exported".
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "outDir": "dist/cjs",
+    "rootDir": "src/ts",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "strict": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": false,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true
+  },
+  "include": ["src/ts/**/*.ts"]
+}

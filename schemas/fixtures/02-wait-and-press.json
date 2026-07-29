@@ -1,0 +1,37 @@
+{
+  "schema_version": 2,
+  "variables": [
+    { "name": "folio", "source": "ticket.extracted.folio", "required": true }
+  ],
+  "actions": [
+    { "id": "open", "action": "goto", "url": "https://facturacion.comercio.mx/folio" },
+    {
+      "id": "type-folio",
+      "action": "fill",
+      "locator": { "strategy": "label", "value": "Folio" },
+      "value": "{{folio}}"
+    },
+    {
+      "id": "confirm",
+      "action": "press",
+      "locator": { "strategy": "label", "value": "Folio" },
+      "key": "Enter"
+    },
+    { "id": "settle", "action": "wait", "duration_ms": 1500 },
+    {
+      "id": "await-result",
+      "action": "wait_selector",
+      "locator": { "strategy": "test_id", "value": "resultado" },
+      "timeout_ms": 20000
+    }
+  ],
+  "edges": [
+    { "from": "open", "to": "type-folio" },
+    { "from": "type-folio", "to": "confirm" },
+    { "from": "confirm", "to": "settle" },
+    { "from": "settle", "to": "await-result" }
+  ],
+  "completion": {
+    "assertions": [{ "type": "url_matches", "pattern": "/confirmacion" }]
+  }
+}

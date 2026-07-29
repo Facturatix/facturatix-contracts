@@ -1,0 +1,67 @@
+{
+  "schema_version": 2,
+  "variables": [
+    {
+      "name": "rfc",
+      "source": "user.fiscal.rfc",
+      "required": true,
+      "pattern": "^[A-Z&Ñ]{3,4}[0-9]{6}[A-Z0-9]{3}$",
+      "description": "Tax id the invoice is issued to."
+    },
+    {
+      "name": "email_fiscal",
+      "source": "user.fiscal.email",
+      "required": true
+    }
+  ],
+  "browser_defaults": {
+    "viewport_width": 1280,
+    "viewport_height": 720,
+    "locale": "es-MX",
+    "timezone": "America/Mexico_City"
+  },
+  "actions": [
+    {
+      "id": "open-portal",
+      "action": "goto",
+      "url": "https://facturacion.comercio.mx/",
+      "timeout_ms": 30000,
+      "description": "Open the invoicing portal"
+    },
+    {
+      "id": "fill-rfc",
+      "action": "fill",
+      "locator": { "strategy": "role", "role": "textbox", "name": "RFC" },
+      "value": "{{rfc}}",
+      "timeout_ms": 10000
+    },
+    {
+      "id": "fill-email",
+      "action": "fill",
+      "locator": { "strategy": "css", "value": "#correo" },
+      "value": "{{email_fiscal}}"
+    },
+    {
+      "id": "submit",
+      "action": "click",
+      "locator": { "strategy": "role", "role": "button", "name": "Generar factura" },
+      "retry_count": 1,
+      "retry_delay_ms": 2000
+    }
+  ],
+  "edges": [
+    { "from": "open-portal", "to": "fill-rfc" },
+    { "from": "fill-rfc", "to": "fill-email" },
+    { "from": "fill-email", "to": "submit" }
+  ],
+  "completion": {
+    "mode": "all",
+    "assertions": [
+      {
+        "type": "selector_text",
+        "locator": { "strategy": "css", "value": "#resultado" },
+        "contains": "solicitud completada"
+      }
+    ]
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "name": "@facturatix/contracts",
+  "version": "2.0.0",
+  "description": "Canonical contracts for the Facturatix platform: recipe execution schema v2 with its reference validator and RFC 8785 canonical hash, machine-readable API error codes, and recipe lifecycle constants. TypeScript twin of the Facturatix.Contracts NuGet package.",
+  "license": "MIT",
+  "author": "Facturatix",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Facturatix/facturatix-contracts.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "main": "./dist/cjs/index.js",
+  "types": "./dist/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/cjs/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    },
+    "./schema": {
+      "types": "./dist/cjs/schema.d.ts",
+      "import": "./dist/esm/schema.js",
+      "require": "./dist/cjs/schema.js"
+    },
+    "./fixtures": {
+      "types": "./dist/cjs/contract-resources.d.ts",
+      "require": "./dist/cjs/contract-resources.js",
+      "default": "./dist/cjs/contract-resources.js"
+    },
+    "./schemas/*": "./schemas/*"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.esm.json && node scripts/write-dist-package-types.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "verify": "node scripts/verify-contract-parity.mjs",
+    "test": "pnpm run build && pnpm run verify",
+    "prepack": "pnpm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "pnpm@11.17.0+sha512.cca3cea332ad254bb84145f966d19f4879615210346fc92c79a047f23a0d7b3cca3c3792f0076ba1f1831d277efbcf0a9119b31a9a60eca7fb3d6231f331ef72",
+  "engines": {
+    "node": ">=24.18.0 <25",
+    "pnpm": ">=11.17.0"
+  },
+  "module": "./dist/esm/index.js"
+}

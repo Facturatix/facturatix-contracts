@@ -32,3 +32,8 @@ nupkg/
 Thumbs.db
 Desktop.ini
 $RECYCLE.BIN/
+
+## Node (@facturatix/contracts)
+node_modules/
+dist/
+*.tgz
