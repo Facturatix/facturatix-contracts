@@ -123,12 +123,38 @@ const hash = computeHash(stepsJson)
 
 ## Consumers
 
-- **facturatix-api** — validates on publish, persists the canonical hash and the schema version
-- **facturatix-generator** — refuses to execute anything the validator rejects
-- **facturatix-modeler** — authors documents and validates locally before publishing
+| Consumer                  | Package                        | Consumes directly                                                                                    | Mirrors, with a test as the gate                                                        |
+| ------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **facturatix-api**        | `Facturatix.Contracts` (NuGet) | `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, `ApiErrorCodes`, the fixture corpus                 | `InternalStatus` / `UserStatus` enums, `ExecutionAttemptOutcome` — `StatusContractTests`   |
+| **facturatix-generator**  | `Facturatix.Contracts` (NuGet) | `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, the status constants, the fixture corpus            | `ExecutionAttemptOutcome`, `DeliveryMode` — `StatusContractTests`                          |
+| **facturatix-modeler**    | `@facturatix/contracts` (npm)  | schema, validator, canonicalizer, fixtures                                                            | —                                                                                          |
 
-Each of the three runs the fixture corpus in its own CI. Changing a rule here breaks the pipeline of
-any consumer that has not adopted it — which is the entire purpose.
+### Why some vocabularies are mirrored rather than consumed
+
+The API's `InternalStatus` is an enum with behaviour attached, and the Generator's
+`ExecutionAttemptOutcome` names a column this package does not own. Turning either into a direct
+dependency would mean the three repositories could no longer be released independently: a status
+added for one service would have to ship a contract version before the change that needed it could
+merge.
+
+The pattern is therefore **own constants plus a mirror test**, and the mirror test is a blocking
+gate in every consumer's CI (plan task D7.1). It costs one test per vocabulary; what it buys is that
+a drift is a build failure with a name, in the repository that caused it, instead of a value written
+to a shared column that the other service silently fails to recognise.
+
+Anything a consumer *branches on* — the schema, the canonical hash, the error codes — is consumed
+directly, because there a divergence has no safe failure mode.
+
+### The gate
+
+Each of the three runs the fixture corpus in its own CI, and the two .NET services also run their
+mirror tests there. Changing a rule here breaks the pipeline of any consumer that has not adopted it
+— which is the entire purpose.
+
+> The Generator used to carry a vendored `src/Contracts/` folder that built a second assembly also
+> named `Facturatix.Contracts`. Whichever one won at restore time decided what "the contract" meant,
+> and nothing recorded which had. It is gone, and a test asserts the contract types resolve from the
+> package.
 
 ## Development
 
@@ -163,6 +189,13 @@ dotnet run --project tools/generate-manifest -- schemas/fixtures
 - **PATCH** — new constants, clarified messages
 - **MINOR** — new optional contract fields, new error codes
 - **MAJOR** — renaming or removing anything a consumer branches on
+
+**2.0.2** is documentation only: the consumer matrix above, and the reasoning behind why some
+vocabularies are consumed directly and others mirrored with a test as the gate (plan task D7.1).
+No schema, validator, canonicalizer, constant or fixture changed — a document canonicalized under
+2.0.1 hashes identically under 2.0.2. It is published rather than left in the repository because
+the README ships inside both packages, and the matrix is only useful to whoever is deciding how to
+consume the contract.
 
 **2.0.1** makes the TypeScript canonicalizer refuse a value with no JSON representation — a
 function or a symbol — instead of serializing it as `null`. `JSON.stringify` omits such a key
