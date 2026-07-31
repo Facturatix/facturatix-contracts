@@ -1,6 +1,6 @@
 {
   "name": "@facturatix/contracts",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Canonical contracts for the Facturatix platform: recipe execution schema v2 with its reference validator and RFC 8785 canonical hash, machine-readable API error codes, and recipe lifecycle constants. TypeScript twin of the Facturatix.Contracts NuGet package.",
   "license": "MIT",
   "author": "Facturatix",

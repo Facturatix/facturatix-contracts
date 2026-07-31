@@ -125,9 +125,10 @@ const hash = computeHash(stepsJson)
 
 | Consumer                  | Package                        | Consumes directly                                                                                    | Mirrors, with a test as the gate                                                        |
 | ------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| **facturatix-api**        | `Facturatix.Contracts` (NuGet) | `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, `ApiErrorCodes`, the fixture corpus                 | `InternalStatus` / `UserStatus` enums, `ExecutionAttemptOutcome` — `StatusContractTests`   |
+| **facturatix-api**        | `Facturatix.Contracts` (NuGet) | `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, `ApiErrorCodes`, `TicketRejectionReasonValues`, the fixture corpus | `InternalStatus` / `UserStatus` enums, `ExecutionAttemptOutcome` — `StatusContractTests`   |
 | **facturatix-generator**  | `Facturatix.Contracts` (NuGet) | `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, the status constants, the fixture corpus            | `ExecutionAttemptOutcome`, `DeliveryMode` — `StatusContractTests`                          |
 | **facturatix-modeler**    | `@facturatix/contracts` (npm)  | schema, validator, canonicalizer, fixtures                                                            | —                                                                                          |
+| **facturatix-web-app**    | `@facturatix/contracts` (npm)  | `TICKET_REJECTION_REASON`                                                                             | —                                                                                          |
 
 ### Why some vocabularies are mirrored rather than consumed
 
@@ -142,8 +143,14 @@ gate in every consumer's CI (plan task D7.1). It costs one test per vocabulary; 
 a drift is a build failure with a name, in the repository that caused it, instead of a value written
 to a shared column that the other service silently fails to recognise.
 
-Anything a consumer *branches on* — the schema, the canonical hash, the error codes — is consumed
-directly, because there a divergence has no safe failure mode.
+Anything a consumer *branches on* — the schema, the canonical hash, the error codes, the ticket
+rejection reasons — is consumed directly, because there a divergence has no safe failure mode.
+
+The rejection reasons are the clearest case. The API stores a code rather than a sentence so the
+wording lives in the client and every user who hit the same problem reads the same explanation in
+their own language. A code the client does not recognise therefore has no good outcome: it either
+shows the user a raw `image_too_blurry`, or silently substitutes a message that is not about their
+problem. That is why they ship here, in both halves, rather than being copied into each repository.
 
 ### The gate
 
@@ -189,6 +196,13 @@ dotnet run --project tools/generate-manifest -- schemas/fixtures
 - **PATCH** — new constants, clarified messages
 - **MINOR** — new optional contract fields, new error codes
 - **MAJOR** — renaming or removing anything a consumer branches on
+
+**2.0.3** adds `TicketRejectionReasonValues` (C#) and `TICKET_REJECTION_REASON` (TypeScript): the
+closed set of reasons an administrator may assign when rejecting a ticket, which replaced the free
+text a reviewer used to type. PATCH because it only adds constants — nothing existing changed, and
+a document canonicalized under 2.0.2 hashes identically under 2.0.3. Note that adding a code here
+is nonetheless a breaking act for a client: it needs user-facing copy in every locale before an
+administrator can select it, which is what the consumers' tests assert.
 
 **2.0.2** is documentation only: the consumer matrix above, and the reasoning behind why some
 vocabularies are consumed directly and others mirrored with a test as the gate (plan task D7.1).

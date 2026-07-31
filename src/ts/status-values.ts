@@ -5,8 +5,9 @@
  * persisted in `InvoiceRecipeVersions.Status`, which the Modeler reads to render version history
  * and to decide whether a version can still be published.
  *
- * Ticket statuses are deliberately absent: no TypeScript consumer of this package touches tickets,
- * and a mirror nobody uses is a mirror nothing keeps in sync.
+ * Ticket statuses are deliberately absent: no TypeScript consumer of this package branches on
+ * them, and a mirror nobody uses is a mirror nothing keeps in sync. Ticket *rejection reasons* are
+ * here — see `rejection-reasons.js` — because the Web App does branch on those.
  *
  * @module
  */
