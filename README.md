@@ -125,7 +125,7 @@ const hash = computeHash(stepsJson)
 
 | Consumer                  | Package                        | Consumes directly                                                                                    | Mirrors, with a test as the gate                                                        |
 | ------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| **facturatix-api**        | `Facturatix.Contracts` (NuGet) | `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, `ApiErrorCodes`, `TicketRejectionReasonValues`, the fixture corpus | `InternalStatus` / `UserStatus` enums, `ExecutionAttemptOutcome` — `StatusContractTests`   |
+| **facturatix-api**        | `Facturatix.Contracts` (NuGet) | `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, `ApiErrorCodes`, the fixture corpus                 | `InternalStatus` / `UserStatus` enums, `ExecutionAttemptOutcome`, `TicketRejectionReason` — `StatusContractTests` |
 | **facturatix-generator**  | `Facturatix.Contracts` (NuGet) | `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, the status constants, the fixture corpus            | `ExecutionAttemptOutcome`, `DeliveryMode` — `StatusContractTests`                          |
 | **facturatix-modeler**    | `@facturatix/contracts` (npm)  | schema, validator, canonicalizer, fixtures                                                            | —                                                                                          |
 | **facturatix-web-app**    | `@facturatix/contracts` (npm)  | `TICKET_REJECTION_REASON`                                                                             | —                                                                                          |
@@ -151,6 +151,12 @@ wording lives in the client and every user who hit the same problem reads the sa
 their own language. A code the client does not recognise therefore has no good outcome: it either
 shows the user a raw `image_too_blurry`, or silently substitutes a message that is not about their
 problem. That is why they ship here, in both halves, rather than being copied into each repository.
+
+The API is the exception, and for a structural reason rather than a preference: its rejection
+catalogue is an enum in the Domain layer, which is required to have no external dependencies, so it
+cannot reference this package. It therefore mirrors the codes with `StatusContractTests` as the
+gate, the same as the ticket statuses. The Web App, which has no such layering constraint, consumes
+`TICKET_REJECTION_REASON` directly.
 
 ### The gate
 
