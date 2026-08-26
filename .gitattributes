@@ -1,0 +1,68 @@
+# Line endings — one standard, shared verbatim by every Facturatix repository.
+#
+# The repository always stores LF. Each checkout gets its own platform's native ending, so a
+# Windows working tree holds CRLF and a macOS or Linux one holds LF — and because git normalizes
+# a working copy before it compares, neither ever surfaces as a modified file. Nobody has to
+# configure anything: cloning is enough, on any operating system.
+#
+# Without this, the ending depends on each machine's `core.autocrlf`, and an editor that saves in
+# the other convention rewrites whole files. A 35-line edit then ships as a 653-line diff, which
+# buries the real change and makes `git blame` point at whoever last pressed save.
+#
+# Do NOT add `eol=` to the `*` rule below. Pinning a single ending for every platform is what
+# leaves the checkout on the other platform permanently dirty — that is the failure this file
+# exists to end, not a stricter version of it.
+* text=auto
+
+# ── Must be LF everywhere, Windows checkouts included ────────────────────────────────────────
+#
+# These are read by a Linux kernel inside a container or on a CI runner. A CR before the newline
+# makes it look for an interpreter literally named `/bin/sh\r`, and the build fails with a message
+# that names neither the file nor the reason.
+*.sh              text eol=lf
+Dockerfile        text eol=lf
+*.Dockerfile      text eol=lf
+.dockerignore     text eol=lf
+
+# Emitted by tooling that writes LF and rewrites the file wholesale when it finds anything else.
+pnpm-lock.yaml    text eol=lf
+package-lock.json text eol=lf
+
+# ── Explicit text, so one stray control byte cannot turn a source file binary ─────────────────
+#
+# `text=auto` decides by content: a single NUL anywhere in the first 8 KB makes git call the file
+# binary, stop diffing it and skip normalization entirely. Naming the source extensions means a
+# code file is always treated as code, and the damage shows up as a diff instead of hiding in one.
+*.cs    text diff=csharp
+*.ts    text
+*.tsx   text
+*.js    text
+*.mjs   text
+*.jsx   text
+*.json  text
+*.css   text
+*.html  text
+*.md    text
+*.yml   text
+*.yaml  text
+*.sql   text
+*.csproj text
+*.props text
+*.slnx  text
+*.svg   text
+
+# ── Binary assets, never normalized ──────────────────────────────────────────────────────────
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.icns  binary
+*.pdf   binary
+*.zip   binary
+*.snk   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
