@@ -51,6 +51,11 @@ export const API_ERROR_CODES = {
   CONFIRMATION_NOT_FOUND: 'confirmation_not_found',
   TICKET_NOT_UNDER_REVIEW: 'ticket_not_under_review',
   TICKET_ALREADY_INVOICED: 'ticket_already_invoiced',
+  /**
+   * An attempt reached the merchant portal and no administrator has recorded whether a CFDI came
+   * out of it. Requeuing before that verdict risks a duplicate invoice.
+   */
+  TICKET_PORTAL_VERDICT_REQUIRED: 'ticket_portal_verdict_required',
 
   // ── Users ─────────────────────────────────────────────────────────────────────────────────
   USER_NOT_FOUND: 'user_not_found',

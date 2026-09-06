@@ -23,7 +23,7 @@ and both implementations of the validator must reproduce the same verdict on it.
 | `schemas/fixtures/`                         | 15 fixtures and a generated manifest with each one's verdict and canonical hash                       |
 | `Facturatix.Contracts.Recipes`              | `RecipeSchemaV2`, `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, `RecipeContractResources`         |
 | `Facturatix.Contracts.Errors`               | `ApiErrorCodes` — the machine-readable `code` carried by every API `ProblemDetails`                   |
-| `Facturatix.Contracts.Tickets` / `.Recipes` | Ticket and recipe-version lifecycle status constants                                                  |
+| `Facturatix.Contracts.Tickets` / `.Recipes` | Ticket and recipe-version lifecycle status constants, rejection reasons, execution channels           |
 | `@facturatix/contracts`                     | TypeScript mirror of the above, plus `@facturatix/contracts/fixtures` for loading the corpus in tests |
 
 ## The recipe execution contract v2
@@ -126,7 +126,7 @@ const hash = computeHash(stepsJson)
 | Consumer                  | Package                        | Consumes directly                                                                                    | Mirrors, with a test as the gate                                                        |
 | ------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | **facturatix-api**        | `Facturatix.Contracts` (NuGet) | `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, `ApiErrorCodes`, the fixture corpus                 | `InternalStatus` / `UserStatus` enums, `ExecutionAttemptOutcome`, `TicketRejectionReason` — `StatusContractTests` |
-| **facturatix-generator**  | `Facturatix.Contracts` (NuGet) | `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, the status constants, the fixture corpus            | `ExecutionAttemptOutcome`, `DeliveryMode` — `StatusContractTests`                          |
+| **facturatix-generator**  | `Facturatix.Contracts` (NuGet) | `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, the status constants, `ExecutionChannelValues`, the fixture corpus | `ExecutionAttemptOutcome`, `DeliveryMode` — `StatusContractTests`                          |
 | **facturatix-modeler**    | `@facturatix/contracts` (npm)  | schema, validator, canonicalizer, fixtures                                                            | —                                                                                          |
 | **facturatix-web-app**    | `@facturatix/contracts` (npm)  | `TICKET_REJECTION_REASON`                                                                             | —                                                                                          |
 
@@ -202,6 +202,20 @@ dotnet run --project tools/generate-manifest -- schemas/fixtures
 - **PATCH** — new constants, clarified messages
 - **MINOR** — new optional contract fields, new error codes
 - **MAJOR** — renaming or removing anything a consumer branches on
+
+**2.1.0** is the precondition release for the recipe exposure channel (analysis
+`ANALISIS-RECETAS-CANAL-DE-EXPOSICION.md`, defects P1 and P2). It adds `ExecutionChannelValues`
+(`general`, `pilot`) — the value the Generator writes into `TicketExecutionLogs.Channel` when it
+resolves a version, and the API reads back; both consumers pin the literals with a mirror test.
+It adds the error code `ticket_portal_verdict_required`: the API now refuses to requeue a ticket
+while any of its attempts reached the merchant portal without a recorded verdict, because the only
+alternative is a second CFDI for the same purchase. And it adds
+`TicketRejectionReasonValues.InternalProcessingError` / `TICKET_REJECTION_REASON.INTERNAL_PROCESSING_ERROR`,
+the first reason that does not blame the user: an administrator closing a ticket whose recipe
+emitted a wrong CFDI had, until now, to pick a falsehood. MINOR because of the new error code; as
+with 2.0.3, the new rejection reason is breaking for clients until they carry copy for it. The
+`piloting` lifecycle state itself is not published yet — it ships with the mechanism, in the next
+MINOR.
 
 **2.0.3** adds `TicketRejectionReasonValues` (C#) and `TICKET_REJECTION_REASON` (TypeScript): the
 closed set of reasons an administrator may assign when rejecting a ticket, which replaced the free

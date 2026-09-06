@@ -53,6 +53,18 @@ public static class TicketRejectionReasonValues
     public const string InvoicingPeriodExpired = "invoicing_period_expired";
 
     /// <summary>
+    /// The ticket was valid and the merchant is supported, but Facturatix itself could not produce
+    /// the invoice — typically a recipe that emitted a wrong CFDI at the portal, which is then
+    /// handled with the tax authority outside the system.
+    /// <para>
+    /// The only reason in the catalog that does not blame the user or the merchant. Every other
+    /// code describes something wrong with the ticket; closing a ticket the system failed with one
+    /// of those would tell the user a falsehood in the product's own voice.
+    /// </para>
+    /// </summary>
+    public const string InternalProcessingError = "internal_processing_error";
+
+    /// <summary>
     /// Every published code. Consumers iterate this to assert they carry copy for all of them,
     /// which is what turns a missing translation into a failing build rather than a user reading
     /// the wrong explanation for their rejection.
@@ -67,5 +79,6 @@ public static class TicketRejectionReasonValues
         MerchantNotRegistered,
         DuplicateSubmission,
         InvoicingPeriodExpired,
+        InternalProcessingError,
     ];
 }

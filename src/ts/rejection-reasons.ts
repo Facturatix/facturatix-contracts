@@ -33,7 +33,12 @@ export const TICKET_REJECTION_REASON = {
   /** The same purchase was already submitted and invoiced. */
   DUPLICATE_SUBMISSION: 'duplicate_submission',
   /** The window the merchant grants for invoicing has closed. */
-  INVOICING_PERIOD_EXPIRED: 'invoicing_period_expired'
+  INVOICING_PERIOD_EXPIRED: 'invoicing_period_expired',
+  /**
+   * Facturatix itself could not produce the invoice — the ticket and the merchant were fine. The
+   * only reason that does not blame the user; the copy must say so.
+   */
+  INTERNAL_PROCESSING_ERROR: 'internal_processing_error'
 } as const
 
 /** A rejection code, as stored and sent over the wire. */
@@ -54,5 +59,6 @@ export const ALL_TICKET_REJECTION_REASONS: readonly TicketRejectionReason[] = [
   TICKET_REJECTION_REASON.MERCHANT_HAS_NO_PORTAL,
   TICKET_REJECTION_REASON.MERCHANT_NOT_REGISTERED,
   TICKET_REJECTION_REASON.DUPLICATE_SUBMISSION,
-  TICKET_REJECTION_REASON.INVOICING_PERIOD_EXPIRED
+  TICKET_REJECTION_REASON.INVOICING_PERIOD_EXPIRED,
+  TICKET_REJECTION_REASON.INTERNAL_PROCESSING_ERROR
 ]

@@ -25,9 +25,9 @@
       publishes from the same commit with the same version, so one number identifies the contract in
       both ecosystems.
     -->
-    <Version>2.0.3</Version>
-    <AssemblyVersion>2.0.1.0</AssemblyVersion>
-    <FileVersion>2.0.1.0</FileVersion>
+    <Version>2.1.0</Version>
+    <AssemblyVersion>2.1.0.0</AssemblyVersion>
+    <FileVersion>2.1.0.0</FileVersion>
 
     <!-- NuGet package metadata -->
     <Authors>Facturatix</Authors>
@@ -74,10 +74,16 @@
 
     contentFiles puts the same files on disk next to the consuming project, which is what editors
     and JSON Schema tooling need to resolve the schema without running code.
+
+    The logical name normalizes %(RecursiveDir) to forward slashes. On Windows MSBuild yields
+    "fixtures\" and the resource would be embedded as "schemas/fixtures\manifest.json", which
+    RecipeContractResources — and every consumer's fixture gate — looks up with "/". CI builds on
+    Linux never hit this, so a package packed locally to test a contract change before publishing
+    silently shipped fixtures nothing could read.
   -->
   <ItemGroup>
     <EmbeddedResource Include="../../schemas/**/*.json"
-                      LogicalName="schemas/%(RecursiveDir)%(Filename)%(Extension)" />
+                      LogicalName="schemas/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
     <Content Include="../../schemas/**/*.json"
              Pack="true"
              PackagePath="contentFiles/any/net10.0/schemas/%(RecursiveDir)"

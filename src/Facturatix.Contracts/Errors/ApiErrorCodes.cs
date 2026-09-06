@@ -94,6 +94,13 @@ public static class ApiErrorCodes
     /// <summary>The ticket already has an execution log; requeuing risks a duplicate invoice.</summary>
     public const string TicketAlreadyInvoiced = "ticket_already_invoiced";
 
+    /// <summary>
+    /// An attempt of the ticket reached the merchant portal and no administrator has recorded
+    /// whether a CFDI came out of it. Requeuing before that verdict risks a duplicate invoice, so
+    /// the API refuses until <c>POST .../attempts/{attempt}/portal-verdict</c> has been called.
+    /// </summary>
+    public const string TicketPortalVerdictRequired = "ticket_portal_verdict_required";
+
     // ── Users ───────────────────────────────────────────────────────────────────────────────
 
     /// <summary>The user does not exist.</summary>
@@ -158,7 +165,7 @@ public static class ApiErrorCodes
         RecipeAlreadyActive, RecipeAlreadyInactive, ValidationFailed,
         TicketNotFound, InvalidImageFormat, ImageTooLarge, TicketImageNotFound, NotOwner,
         TicketNotDeletable, QuotaExceeded, StepScreenshotNotFound, ConfirmationNotFound,
-        TicketNotUnderReview, TicketAlreadyInvoiced,
+        TicketNotUnderReview, TicketAlreadyInvoiced, TicketPortalVerdictRequired,
         UserNotFound, InvalidName, PhotoNotFound,
         InvalidAppName, InvalidPlatform, ReleaseVersionExists, ReleaseNotFound, NoUpdateAvailable,
         IdempotencyKeyReuse, IdempotencyInProgress, IdempotencyKeyMissing, IdempotencyKeyInvalid,
