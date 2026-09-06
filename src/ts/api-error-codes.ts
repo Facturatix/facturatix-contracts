@@ -34,6 +34,11 @@ export const API_ERROR_CODES = {
   RECIPE_ALREADY_ACTIVE: 'recipe_already_active',
   /** The recipe is already inactive. */
   RECIPE_ALREADY_INACTIVE: 'recipe_already_inactive',
+  /**
+   * The version's row changed while the request was running: another operation published,
+   * deprecated, withdrew or deleted it in between. Nothing was written. Reload and decide again.
+   */
+  VERSION_STATE_CHANGED: 'version_state_changed',
   /** The payload failed validation; `extensions.errors` carries the detail. */
   VALIDATION_FAILED: 'validation_failed',
 

@@ -203,6 +203,15 @@ dotnet run --project tools/generate-manifest -- schemas/fixtures
 - **MINOR** — new optional contract fields, new error codes
 - **MAJOR** — renaming or removing anything a consumer branches on
 
+**2.2.0** adds the error code `version_state_changed` (`VERSION_STATE_CHANGED`), for defect P4 of
+the same analysis: the API now guards every write to a recipe version with PostgreSQL's `xmin` as
+an optimistic concurrency token, so two operations that read the same version and both try to move
+it — a publish and a deprecation today, a promotion and a pilot abandonment once the channel exists
+— can no longer both commit and leave a recipe with no executable version. The loser gets a `409`
+with this code and nothing it wrote survives; the recovery is to reload the version and decide
+again on what it is now. MINOR because of the new error code. `piloting` and the remaining
+pilot-channel codes still ship with the mechanism, in a later MINOR.
+
 **2.1.0** is the precondition release for the recipe exposure channel (analysis
 `ANALISIS-RECETAS-CANAL-DE-EXPOSICION.md`, defects P1 and P2). It adds `ExecutionChannelValues`
 (`general`, `pilot`) — the value the Generator writes into `TicketExecutionLogs.Channel` when it

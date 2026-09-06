@@ -54,6 +54,13 @@ public static class ApiErrorCodes
     public const string RecipeAlreadyInactive = "recipe_already_inactive";
 
     /// <summary>
+    /// The version's row changed while the request was running: another operation published,
+    /// deprecated, withdrew or deleted it in between. Nothing was written. Reload the version and
+    /// decide again on what it is now.
+    /// </summary>
+    public const string VersionStateChanged = "version_state_changed";
+
+    /// <summary>
     /// The payload failed validation. <c>extensions.errors</c> carries the detail; for recipe
     /// payloads those details are <see cref="Recipes.RecipeSchemaV2.ValidationCodes"/> values.
     /// </summary>
@@ -162,7 +169,7 @@ public static class ApiErrorCodes
     {
         RecipeNotFound, RecipeSlugConflict, RecipeIdentityConflict, RecipeVersionNotFound,
         VersionNotDraft, VersionNotPublished, VersionNotDeprecated, VersionIsDraft,
-        RecipeAlreadyActive, RecipeAlreadyInactive, ValidationFailed,
+        RecipeAlreadyActive, RecipeAlreadyInactive, VersionStateChanged, ValidationFailed,
         TicketNotFound, InvalidImageFormat, ImageTooLarge, TicketImageNotFound, NotOwner,
         TicketNotDeletable, QuotaExceeded, StepScreenshotNotFound, ConfirmationNotFound,
         TicketNotUnderReview, TicketAlreadyInvoiced, TicketPortalVerdictRequired,
