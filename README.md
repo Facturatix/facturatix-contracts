@@ -17,14 +17,14 @@ and both implementations of the validator must reproduce the same verdict on it.
 
 ## What's included
 
-| Namespace / module                          | Contents                                                                                              |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `schemas/recipe-execution.schema.v2.json`   | The recipe execution contract v2 (JSON Schema 2020-12) plus the semantic rules it cannot express      |
-| `schemas/fixtures/`                         | 15 fixtures and a generated manifest with each one's verdict and canonical hash                       |
-| `Facturatix.Contracts.Recipes`              | `RecipeSchemaV2`, `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, `RecipeContractResources`         |
-| `Facturatix.Contracts.Errors`               | `ApiErrorCodes` — the machine-readable `code` carried by every API `ProblemDetails`                   |
-| `Facturatix.Contracts.Tickets` / `.Recipes` | Ticket and recipe-version lifecycle status constants, rejection reasons, execution channels           |
-| `@facturatix/contracts`                     | TypeScript mirror of the above, plus `@facturatix/contracts/fixtures` for loading the corpus in tests |
+| Namespace / module                          | Contents                                                                                                                                   |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `schemas/recipe-execution.schema.v2.json`   | The recipe execution contract v2 (JSON Schema 2020-12) plus the semantic rules it cannot express                                           |
+| `schemas/fixtures/`                         | 15 fixtures and a generated manifest with each one's verdict and canonical hash                                                            |
+| `Facturatix.Contracts.Recipes`              | `RecipeSchemaV2`, `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, `RecipeContractResources`                                              |
+| `Facturatix.Contracts.Errors`               | `ApiErrorCodes` — the machine-readable `code` carried by every API `ProblemDetails`                                                        |
+| `Facturatix.Contracts.Tickets` / `.Recipes` | Ticket and recipe-version lifecycle status constants, rejection reasons, execution channels, pilot consent codes and pilot abandon reasons |
+| `@facturatix/contracts`                     | TypeScript mirror of the above, plus `@facturatix/contracts/fixtures` for loading the corpus in tests                                      |
 
 ## The recipe execution contract v2
 
@@ -123,12 +123,12 @@ const hash = computeHash(stepsJson)
 
 ## Consumers
 
-| Consumer                  | Package                        | Consumes directly                                                                                    | Mirrors, with a test as the gate                                                        |
-| ------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| **facturatix-api**        | `Facturatix.Contracts` (NuGet) | `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, `ApiErrorCodes`, the fixture corpus                 | `InternalStatus` / `UserStatus` enums, `ExecutionAttemptOutcome`, `TicketRejectionReason` — `StatusContractTests` |
-| **facturatix-generator**  | `Facturatix.Contracts` (NuGet) | `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, the status constants, `ExecutionChannelValues`, the fixture corpus | `ExecutionAttemptOutcome`, `DeliveryMode` — `StatusContractTests`                          |
-| **facturatix-modeler**    | `@facturatix/contracts` (npm)  | schema, validator, canonicalizer, fixtures                                                            | —                                                                                          |
-| **facturatix-web-app**    | `@facturatix/contracts` (npm)  | `TICKET_REJECTION_REASON`                                                                             | —                                                                                          |
+| Consumer                 | Package                        | Consumes directly                                                                                                                    | Mirrors, with a test as the gate                                                                                  |
+| ------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| **facturatix-api**       | `Facturatix.Contracts` (NuGet) | `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, `ApiErrorCodes`, the fixture corpus                                                | `InternalStatus` / `UserStatus` enums, `ExecutionAttemptOutcome`, `TicketRejectionReason` — `StatusContractTests` |
+| **facturatix-generator** | `Facturatix.Contracts` (NuGet) | `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, the status constants, `ExecutionChannelValues`, the fixture corpus                 | `ExecutionAttemptOutcome`, `DeliveryMode` — `StatusContractTests`                                                 |
+| **facturatix-modeler**   | `@facturatix/contracts` (npm)  | schema, validator, canonicalizer, fixtures, `API_ERROR_CODES`, `RECIPE_VERSION_STATUS`, `PILOT_CONSENT_CODE`, `PILOT_ABANDON_REASON` | —                                                                                                                 |
+| **facturatix-web-app**   | `@facturatix/contracts` (npm)  | `TICKET_REJECTION_REASON`                                                                                                            | —                                                                                                                 |
 
 ### Why some vocabularies are mirrored rather than consumed
 
@@ -143,7 +143,7 @@ gate in every consumer's CI (plan task D7.1). It costs one test per vocabulary; 
 a drift is a build failure with a name, in the repository that caused it, instead of a value written
 to a shared column that the other service silently fails to recognise.
 
-Anything a consumer *branches on* — the schema, the canonical hash, the error codes, the ticket
+Anything a consumer _branches on_ — the schema, the canonical hash, the error codes, the ticket
 rejection reasons — is consumed directly, because there a divergence has no safe failure mode.
 
 The rejection reasons are the clearest case. The API stores a code rather than a sentence so the
@@ -202,6 +202,23 @@ dotnet run --project tools/generate-manifest -- schemas/fixtures
 - **PATCH** — new constants, clarified messages
 - **MINOR** — new optional contract fields, new error codes
 - **MAJOR** — renaming or removing anything a consumer branches on
+
+**2.3.0** ships the pilot channel vocabulary (analysis `ANALISIS-RECETAS-CANAL-DE-EXPOSICION.md`,
+phase 1). It adds the fifth lifecycle state `RecipeVersionStatusValues.Piloting` /
+`RECIPE_VERSION_STATUS.PILOTING` — a version the Generator executes only for the users enrolled in
+the recipe's pilot audience, and which stale code filtering on `published` can never see — plus
+`RecipeVersionStatusValues.All` in transition order (draft, piloting, published, deprecated,
+archived). It adds two closed vocabularies the Modeler renders and the API validates:
+`PilotConsentCodeValues` / `PILOT_CONSENT_CODE` (`internal_staff_v1`, `pilot_optin_v1`), the consent
+a pilot membership is recorded under, and `PilotAbandonReasonValues` / `PILOT_ABANDON_REASON`
+(`recipe_defect`, `portal_changed`, `superseded`, `audience_unavailable`, `cancelled`), the reason a
+version is withdrawn from the pilot channel back to draft. And it adds eight error codes:
+`version_not_piloting`, `pilot_already_running`, `pilot_audience_empty`, `pilot_member_exists`,
+`pilot_member_ambiguous`, `pilot_member_not_found`, `promotion_blocked_no_decided_tickets` and
+`promotion_blocked_unresolved_portal_attempts`. MINOR because everything is additive. Adding the
+fifth state is deliberately red for the API's `StatusContractTests`, which pin the count at four:
+that failure is the gate that keeps a lifecycle state from entering by accident, and the API change
+that adopts 2.3.0 updates it in the same commit.
 
 **2.2.0** adds the error code `version_state_changed` (`VERSION_STATE_CHANGED`), for defect P4 of
 the same analysis: the API now guards every write to a recipe version with PostgreSQL's `xmin` as

@@ -39,6 +39,27 @@ export const API_ERROR_CODES = {
    * deprecated, withdrew or deleted it in between. Nothing was written. Reload and decide again.
    */
   VERSION_STATE_CHANGED: 'version_state_changed',
+
+  // ── Recipes: pilot channel ────────────────────────────────────────────────────────────────
+  /** Promote or abandon on a version that is not piloting. Reload the version. */
+  VERSION_NOT_PILOTING: 'version_not_piloting',
+  /** The recipe already carries a pilot version; promote or abandon it first. */
+  PILOT_ALREADY_RUNNING: 'pilot_already_running',
+  /** No active, unexpired pilot member: enroll at least one before starting the pilot. */
+  PILOT_AUDIENCE_EMPTY: 'pilot_audience_empty',
+  /** The user already holds an active membership in this recipe's pilot. */
+  PILOT_MEMBER_EXISTS: 'pilot_member_exists',
+  /** More than one account carries that e-mail; resolve the duplicates before enrolling. */
+  PILOT_MEMBER_AMBIGUOUS: 'pilot_member_ambiguous',
+  /** The pilot membership does not exist, or belongs to another recipe. */
+  PILOT_MEMBER_NOT_FOUND: 'pilot_member_not_found',
+  /** No pilot ticket has reached a decision yet; promotion needs evidence, not time. */
+  PROMOTION_BLOCKED_NO_DECIDED_TICKETS: 'promotion_blocked_no_decided_tickets',
+  /**
+   * An attempt of the pilot version reached the portal without a recorded verdict. Record the
+   * verdicts before promoting.
+   */
+  PROMOTION_BLOCKED_UNRESOLVED_PORTAL_ATTEMPTS: 'promotion_blocked_unresolved_portal_attempts',
   /** The payload failed validation; `extensions.errors` carries the detail. */
   VALIDATION_FAILED: 'validation_failed',
 

@@ -60,6 +60,52 @@ public static class ApiErrorCodes
     /// </summary>
     public const string VersionStateChanged = "version_state_changed";
 
+    // ── Recipes: pilot channel ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Promote or abandon was attempted on a version that is not <c>piloting</c>. Reload the
+    /// version: it was promoted, abandoned or never sent to the pilot channel.
+    /// </summary>
+    public const string VersionNotPiloting = "version_not_piloting";
+
+    /// <summary>
+    /// The recipe already has a version in the pilot channel. Promote or abandon it first; a recipe
+    /// carries at most one pilot at a time.
+    /// </summary>
+    public const string PilotAlreadyRunning = "pilot_already_running";
+
+    /// <summary>
+    /// The recipe has no active, unexpired pilot member, so nobody could ever receive the pilot
+    /// version. Enroll at least one member before starting the pilot.
+    /// </summary>
+    public const string PilotAudienceEmpty = "pilot_audience_empty";
+
+    /// <summary>The user already holds an active membership in this recipe's pilot.</summary>
+    public const string PilotMemberExists = "pilot_member_exists";
+
+    /// <summary>
+    /// More than one account carries the given e-mail, so the enrolment cannot tell which user
+    /// consented. Resolve the duplicate accounts before enrolling.
+    /// </summary>
+    public const string PilotMemberAmbiguous = "pilot_member_ambiguous";
+
+    /// <summary>The pilot membership does not exist, or belongs to another recipe.</summary>
+    public const string PilotMemberNotFound = "pilot_member_not_found";
+
+    /// <summary>
+    /// Promotion refused because no pilot ticket has reached a decision yet. Evidence, not time,
+    /// is what a promotion rests on: at least one ticket must have completed or failed through
+    /// the pilot channel.
+    /// </summary>
+    public const string PromotionBlockedNoDecidedTickets = "promotion_blocked_no_decided_tickets";
+
+    /// <summary>
+    /// Promotion refused because an attempt of this version reached the merchant portal and no
+    /// administrator has recorded whether a CFDI came out of it. Record the verdicts first.
+    /// </summary>
+    public const string PromotionBlockedUnresolvedPortalAttempts =
+        "promotion_blocked_unresolved_portal_attempts";
+
     /// <summary>
     /// The payload failed validation. <c>extensions.errors</c> carries the detail; for recipe
     /// payloads those details are <see cref="Recipes.RecipeSchemaV2.ValidationCodes"/> values.
@@ -170,6 +216,9 @@ public static class ApiErrorCodes
         RecipeNotFound, RecipeSlugConflict, RecipeIdentityConflict, RecipeVersionNotFound,
         VersionNotDraft, VersionNotPublished, VersionNotDeprecated, VersionIsDraft,
         RecipeAlreadyActive, RecipeAlreadyInactive, VersionStateChanged, ValidationFailed,
+        VersionNotPiloting, PilotAlreadyRunning, PilotAudienceEmpty, PilotMemberExists,
+        PilotMemberAmbiguous, PilotMemberNotFound, PromotionBlockedNoDecidedTickets,
+        PromotionBlockedUnresolvedPortalAttempts,
         TicketNotFound, InvalidImageFormat, ImageTooLarge, TicketImageNotFound, NotOwner,
         TicketNotDeletable, QuotaExceeded, StepScreenshotNotFound, ConfirmationNotFound,
         TicketNotUnderReview, TicketAlreadyInvoiced, TicketPortalVerdictRequired,
