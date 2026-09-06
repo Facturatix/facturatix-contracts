@@ -1,0 +1,10 @@
+# Transitive version floors applied to close advisories without touching direct dependencies.
+# Each floor is a version upstream already published, so nothing is downgraded to satisfy them.
+overrides:
+  # GHSA-rgw5-rvv9-x895 (high): brace-expansion 5.0.8 still allows the unbounded intermediate
+  # arrays the CVE-2026-14257 mitigation was meant to close; 5.0.9 is the first release that does.
+  # It reaches this tree only through eslint (@eslint/config-array, minimatch@10), at lint time.
+  # Scoped to the 5.x line and upper-bounded on purpose, as in the other repositories: an
+  # unbounded floor resolves to the newest release on any line, and a future 6.x could change
+  # the export shape ESLint relies on.
+  'brace-expansion@5': '>=5.0.9 <6'
