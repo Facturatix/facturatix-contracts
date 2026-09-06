@@ -1,0 +1,30 @@
+# EditorConfig — one standard, shared verbatim by every Facturatix repository.
+# https://editorconfig.org
+#
+# `.gitattributes` decides what is committed and checked out (always LF). This file is the other
+# half: it makes the editor save existing files and create new ones with LF, so what the editor
+# writes and what git normalizes never disagree, on any operating system. Visual Studio, Rider and
+# the JetBrains IDEs read it natively; VS Code needs the EditorConfig extension.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.cs]
+indent_size = 4
+
+[*.{md,mdx}]
+# Two trailing spaces are a hard line break in Markdown.
+trim_trailing_whitespace = false
+
+[*.{bat,cmd}]
+# cmd.exe is the one format that needs CRLF; .gitattributes says the same.
+end_of_line = crlf
+
+[Makefile]
+indent_style = tab

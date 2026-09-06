@@ -1,20 +1,29 @@
 # Line endings — one standard, shared verbatim by every Facturatix repository.
 #
-# The repository always stores LF. Each checkout gets its own platform's native ending, so a
-# Windows working tree holds CRLF and a macOS or Linux one holds LF — and because git normalizes
-# a working copy before it compares, neither ever surfaces as a modified file. Nobody has to
-# configure anything: cloning is enough, on any operating system.
+# The repository stores LF, and every checkout gets LF too: Windows, macOS and Linux alike,
+# whatever `core.autocrlf` or `core.eol` says on the machine. Attributes take precedence over local
+# configuration, so cloning is enough and nobody has to configure anything.
 #
-# Without this, the ending depends on each machine's `core.autocrlf`, and an editor that saves in
-# the other convention rewrites whole files. A 35-line edit then ships as a 653-line diff, which
-# buries the real change and makes `git blame` point at whoever last pressed save.
+# Why LF everywhere rather than each platform's "native" ending: the tools that read these files
+# do not agree on what native means. Prettier's default (`endOfLine: lf`) and the ESLint rule that
+# enforces it reject every line of a CRLF checkout with `Delete ␍`; a shell script or Dockerfile
+# with a CR before the newline fails inside a Linux container looking for `/bin/sh\r`; the .NET
+# formatter follows `.editorconfig`, which says LF. A checkout that is CRLF on one machine and LF
+# on another is one where the same command passes on one and fails on the other. Every editor and
+# toolchain used here — Visual Studio, Rider, VS Code, the .NET SDK, Node, PowerShell — reads and
+# writes LF without complaint. The one Windows format that genuinely needs CRLF is cmd.exe batch,
+# listed below.
 #
-# Do NOT add `eol=` to the `*` rule below. Pinning a single ending for every platform is what
-# leaves the checkout on the other platform permanently dirty — that is the failure this file
-# exists to end, not a stricter version of it.
-* text=auto
+# Every repository already held LF in its index when `eol=lf` was added, so no committed file
+# changed. A working tree cloned before this change may still hold CRLF; refresh it once, on a
+# clean tree (stash or commit first):
+#     git rm --cached -r . && git reset --hard
+#
+# `.editorconfig` is the other half: it makes editors save and create files with LF, so what the
+# editor writes and what git checks out never disagree.
+* text=auto eol=lf
 
-# ── Must be LF everywhere, Windows checkouts included ────────────────────────────────────────
+# ── Must be LF even if the default above ever changes ─────────────────────────────────────────
 #
 # These are read by a Linux kernel inside a container or on a CI runner. A CR before the newline
 # makes it look for an interpreter literally named `/bin/sh\r`, and the build fails with a message
@@ -24,32 +33,58 @@ Dockerfile        text eol=lf
 *.Dockerfile      text eol=lf
 .dockerignore     text eol=lf
 
-# Emitted by tooling that writes LF and rewrites the file wholesale when it finds anything else.
-pnpm-lock.yaml    text eol=lf
-package-lock.json text eol=lf
+# ── The one format that needs CRLF: cmd.exe batch files ───────────────────────────────────────
+#
+# cmd.exe reads a batch file line by line while executing it and mis-parses labels and multi-line
+# blocks that end in a bare LF. Nothing else on Windows has this constraint; PowerShell does not.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
+# ── Generated lockfiles: regenerate, never hand-merge ─────────────────────────────────────────
+#
+# A line-by-line merge of `pnpm-lock.yaml` can produce a file that looks valid and is not: when two
+# branches independently add the same package version, git keeps both blocks and pnpm fails with
+# ERR_PNPM_BROKEN_LOCKFILE (duplicated mapping key) — which is how facturatix-landing PR #23 showed
+# as mergeable while broken. `merge=binary` keeps the diff readable but stops git from inventing a
+# merge: both sides touching the lockfile is a conflict, resolved by
+#     git checkout --ours pnpm-lock.yaml && pnpm install
+# Dependabot rebases on its own when this happens, and CI revalidates the branch on the real base.
+pnpm-lock.yaml    text eol=lf merge=binary linguist-generated=true
+package-lock.json text eol=lf merge=binary linguist-generated=true
 
 # ── Explicit text, so one stray control byte cannot turn a source file binary ─────────────────
 #
 # `text=auto` decides by content: a single NUL anywhere in the first 8 KB makes git call the file
 # binary, stop diffing it and skip normalization entirely. Naming the source extensions means a
 # code file is always treated as code, and the damage shows up as a diff instead of hiding in one.
-*.cs    text diff=csharp
-*.ts    text
-*.tsx   text
-*.js    text
-*.mjs   text
-*.jsx   text
-*.json  text
-*.css   text
-*.html  text
-*.md    text
-*.yml   text
-*.yaml  text
-*.sql   text
+*.cs     text diff=csharp
+*.ts     text
+*.tsx    text
+*.mts    text
+*.cts    text
+*.js     text
+*.mjs    text
+*.cjs    text
+*.jsx    text
+*.json   text
+*.jsonc  text
+*.css    text
+*.scss   text
+*.html   text
+*.md     text
+*.mdx    text
+*.yml    text
+*.yaml   text
+*.toml   text
+*.sql    text
+*.ps1    text
 *.csproj text
-*.props text
-*.slnx  text
-*.svg   text
+*.props  text
+*.targets text
+*.slnx   text
+*.svg    text
+*.txt    text
+*.env*   text
 
 # ── Binary assets, never normalized ──────────────────────────────────────────────────────────
 *.png   binary
@@ -61,8 +96,19 @@ package-lock.json text eol=lf
 *.icns  binary
 *.pdf   binary
 *.zip   binary
+*.gz    binary
+*.tar   binary
 *.snk   binary
 *.woff  binary
 *.woff2 binary
 *.ttf   binary
 *.otf   binary
+*.mp4   binary
+*.nupkg binary
+*.snupkg binary
+*.dll   binary
+*.exe   binary
+*.pdb   binary
+*.msi   binary
+*.dmg   binary
+*.deb   binary
