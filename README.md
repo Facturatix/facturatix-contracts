@@ -121,6 +121,25 @@ if (!verdict.isValid) showErrors(verdict.messages)
 const hash = computeHash(stepsJson)
 ```
 
+## Entry points
+
+| Import                            | Carries                                                                 | Safe in a browser bundle |
+| --------------------------------- | ----------------------------------------------------------------------- | ------------------------ |
+| `@facturatix/contracts/schema`    | Every closed vocabulary, the document types and the reference validator | Yes                      |
+| `@facturatix/contracts`           | The above, plus the RFC 8785 canonicalizer                              | **No** — `node:crypto`   |
+| `@facturatix/contracts/fixtures`  | The fixture corpus, read from disk                                      | **No** — `node:fs`       |
+| `@facturatix/contracts/schemas/*` | The raw JSON Schema documents                                           | Yes                      |
+
+The root is defined as `/schema` plus the canonicalizer, so a vocabulary added to `/schema` belongs
+to both and the browser-safe entry cannot fall behind the root. Anything that bundles for a browser
+— an Electron renderer, a Next.js client component — imports `/schema`.
+
+Reaching for the root there does not fail at build time, which is what makes the mistake expensive:
+Vite replaces `node:crypto` with a stub that throws when a property is read, so the module graph
+dies while it is being evaluated and the app renders nothing at all. Node-based tests keep passing,
+because in Node the import is legal. The Modeler pins the rule with an ESLint `no-restricted-imports`
+entry over `src/renderer` and `src/shared`; a browser consumer without that guard should add one.
+
 ## Consumers
 
 | Consumer                 | Package                        | Consumes directly                                                                                                                    | Mirrors, with a test as the gate                                                                                  |
@@ -202,6 +221,16 @@ dotnet run --project tools/generate-manifest -- schemas/fixtures
 - **PATCH** — new constants, clarified messages
 - **MINOR** — new optional contract fields, new error codes
 - **MAJOR** — renaming or removing anything a consumer branches on
+
+**2.3.1** makes the pilot and rejection vocabularies reachable from `/schema` and redefines the root
+entry as `/schema` plus the canonicalizer. Nothing is added, renamed or removed from the contract —
+PATCH — but 2.3.0 put `PILOT_CONSENT_CODE` and `PILOT_ABANDON_REASON` in the root only, so the
+Modeler's pilot screens had no browser-safe way to reach them. The import they were forced into
+pulled `node:crypto` into the renderer bundle and the window came up blank, with both repositories'
+test suites green because both run in Node. `TICKET_REJECTION_REASON` had the same shape of problem
+in `facturatix-web-app`, where the polyfill chain ends in `eval` and the app's CSP blocks it; that
+client currently declares the codes literally, and can consume them once it moves to this version.
+Composing the two entry points is what stops the pair from drifting again.
 
 **2.3.0** ships the pilot channel vocabulary (analysis `ANALISIS-RECETAS-CANAL-DE-EXPOSICION.md`,
 phase 1). It adds the fifth lifecycle state `RecipeVersionStatusValues.Piloting` /

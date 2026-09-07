@@ -25,7 +25,7 @@
       publishes from the same commit with the same version, so one number identifies the contract in
       both ecosystems.
     -->
-    <Version>2.3.0</Version>
+    <Version>2.3.1</Version>
     <AssemblyVersion>2.3.0.0</AssemblyVersion>
     <FileVersion>2.3.0.0</FileVersion>
 
