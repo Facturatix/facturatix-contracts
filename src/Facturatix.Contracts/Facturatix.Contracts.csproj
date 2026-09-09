@@ -48,17 +48,24 @@
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
 
-    <!-- SourceLink for debugging into package source -->
+    <!--
+      SourceLink for debugging into package source. There is no PackageReference: the .NET SDK
+      has carried the SourceLink targets since .NET 8, so a project targeting net10.0 gets them
+      from the SDK, and the properties below are all the opt-in it needs (the packed .nuspec
+      carries <repository commit="..."> and obj/<config>/net10.0/*.sourcelink.json is generated,
+      which is how this was verified).
+
+      The explicit Microsoft.SourceLink.GitHub 8.0.0 reference was removed on 2026-09-09: it drags
+      in Microsoft.Build.Tasks.Git 8.0.0, which CVE-2026-62900 (GHSA-23fw-v26w-5fgq, published
+      2026-09-08) marks vulnerable with NO patched 8.x release, so NuGetAudit raised NU1902 and
+      TreatWarningsAsErrors turned it into a restore error on every build. Do not add the package
+      back; if a future SDK ever stops bundling SourceLink, reference 10.0.401 or newer, never 8.0.0.
+    -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
-
-  <!-- SourceLink: enables consumers to step into Contracts source code -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
-  </ItemGroup>
 
   <!-- Include README in the NuGet package -->
   <ItemGroup>

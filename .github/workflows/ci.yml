@@ -217,10 +217,23 @@ jobs:
 
       # `--no-git-checks`: the version is stamped in place from the csproj, so the
       # working tree is intentionally dirty at this point.
+      #
+      # The existence check is npm's missing `--skip-duplicate`. The NuGet push above already
+      # tolerates republishing the same version; npm answers 409 EPUBLISHCONFLICT and fails the
+      # job. Without this, any push to `main` that does not change <Version> — a build fix, a
+      # workflow edit, a lint rule — turns the pipeline red after NuGet has already succeeded,
+      # which is a half-published state that is worse than either outcome. Skipping keeps the two
+      # halves symmetric: publishing is what a version bump does, not what a push does.
       - name: Publish to GitHub Packages (npm)
         run: |
-          npm version ${{ steps.version.outputs.version }} --no-git-tag-version --allow-same-version
-          pnpm publish --no-git-checks --access restricted
+          VERSION='${{ steps.version.outputs.version }}'
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          if npm view "@facturatix/contracts@$VERSION" version --registry=https://npm.pkg.github.com > /dev/null 2>&1; then
+            echo "::warning::@facturatix/contracts@$VERSION is already published; nothing was pushed to npm. Bump <Version> in the csproj (and package.json) to publish new contract content."
+            echo "> ⚠️ npm: \`$VERSION\` was already published — skipped." >> $GITHUB_STEP_SUMMARY
+          else
+            pnpm publish --no-git-checks --access restricted
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
