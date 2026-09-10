@@ -82,6 +82,12 @@ export const API_ERROR_CODES = {
    * out of it. Requeuing before that verdict risks a duplicate invoice.
    */
   TICKET_PORTAL_VERDICT_REQUIRED: 'ticket_portal_verdict_required',
+  /**
+   * An attempt carries a portal verdict under which the ticket must not be reported to the user
+   * as a failure: `duplicate_suspected`, where nobody could establish whether a CFDI exists, or
+   * `cfdi_emitted_correct`, where it exists and the exit is complete-by-verdict.
+   */
+  TICKET_PORTAL_VERDICT_FORBIDS_FAIL: 'ticket_portal_verdict_forbids_fail',
 
   // ── Users ─────────────────────────────────────────────────────────────────────────────────
   USER_NOT_FOUND: 'user_not_found',

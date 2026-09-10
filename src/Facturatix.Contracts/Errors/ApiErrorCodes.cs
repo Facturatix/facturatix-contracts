@@ -154,6 +154,16 @@ public static class ApiErrorCodes
     /// </summary>
     public const string TicketPortalVerdictRequired = "ticket_portal_verdict_required";
 
+    /// <summary>
+    /// An attempt of the ticket carries a portal verdict under which the ticket must not be told
+    /// to the user as a failure. Two cases reach this code, and the ticket's own attempt list says
+    /// which: <c>duplicate_suspected</c>, where nobody could establish whether a CFDI exists, so
+    /// there is no honest thing to tell the user until a conclusive verdict replaces it; and
+    /// <c>cfdi_emitted_correct</c>, where the invoice exists and the exit is
+    /// <c>POST .../complete-by-verdict</c>, not a failure.
+    /// </summary>
+    public const string TicketPortalVerdictForbidsFail = "ticket_portal_verdict_forbids_fail";
+
     // ── Users ───────────────────────────────────────────────────────────────────────────────
 
     /// <summary>The user does not exist.</summary>
@@ -222,6 +232,7 @@ public static class ApiErrorCodes
         TicketNotFound, InvalidImageFormat, ImageTooLarge, TicketImageNotFound, NotOwner,
         TicketNotDeletable, QuotaExceeded, StepScreenshotNotFound, ConfirmationNotFound,
         TicketNotUnderReview, TicketAlreadyInvoiced, TicketPortalVerdictRequired,
+        TicketPortalVerdictForbidsFail,
         UserNotFound, InvalidName, PhotoNotFound,
         InvalidAppName, InvalidPlatform, ReleaseVersionExists, ReleaseNotFound, NoUpdateAvailable,
         IdempotencyKeyReuse, IdempotencyInProgress, IdempotencyKeyMissing, IdempotencyKeyInvalid,

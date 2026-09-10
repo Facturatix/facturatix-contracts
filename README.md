@@ -222,6 +222,17 @@ dotnet run --project tools/generate-manifest -- schemas/fixtures
 - **MINOR** — new optional contract fields, new error codes
 - **MAJOR** — renaming or removing anything a consumer branches on
 
+**2.4.0** adds one error code, `ticket_portal_verdict_forbids_fail`
+(`TICKET_PORTAL_VERDICT_FORBIDS_FAIL`), for defect A4 of the exposure-channel audit. Failing a
+ticket is the only path that tells a user "we could not invoice this", and it checked nothing
+about the portal: an administrator could close a ticket with `system_error` while an attempt of it
+carried `duplicate_suspected` — nobody could establish whether a CFDI was emitted under the user's
+RFC — or `cfdi_emitted_correct`, where the invoice exists and the exit is complete-by-verdict. The
+API now refuses both with this code, and keeps answering `ticket_portal_verdict_required` when an
+attempt reached the portal with no verdict at all, which is the same refusal requeue already gave.
+MINOR because it is additive: no existing code changes meaning, and a consumer that does not know
+it treats it as an unrecognised 409, exactly as `ApiErrorCodes.All` is meant to be used.
+
 **2.3.1** makes the pilot and rejection vocabularies reachable from `/schema` and redefines the root
 entry as `/schema` plus the canonicalizer. Nothing is added, renamed or removed from the contract —
 PATCH — but 2.3.0 put `PILOT_CONSENT_CODE` and `PILOT_ABANDON_REASON` in the root only, so the
