@@ -42,7 +42,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.esm.json --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "verify": "node scripts/verify-contract-parity.mjs",
+    "verify": "node scripts/verify-contract-parity.mjs && node scripts/check-doc-citations.mjs",
     "test": "pnpm run build && pnpm run verify",
     "prepack": "pnpm run build"
   },

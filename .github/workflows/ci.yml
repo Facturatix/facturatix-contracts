@@ -140,6 +140,12 @@ jobs:
       - name: Verify the TypeScript implementation reproduces the manifest
         run: node scripts/verify-contract-parity.mjs
 
+      # Audit B4: a docs/... path named anywhere in this repository has to resolve, or name
+      # the repository that owns it. The other five assert the same rule as a unit test; this
+      # package has no unit-test runner, so it runs here and from `pnpm run verify`.
+      - name: Verify every documentation citation resolves
+        run: node scripts/check-doc-citations.mjs
+
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
         with:
