@@ -16,6 +16,7 @@
  */
 
 export * from './recipe-schema-v2.js'
+export * from './variable-catalog.js'
 export * from './validator.js'
 export * from './api-error-codes.js'
 export * from './status-values.js'

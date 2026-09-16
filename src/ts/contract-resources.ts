@@ -12,6 +12,12 @@ import { readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
 
 import { SCHEMA_FILE_NAME } from './recipe-schema-v2.js'
+import {
+  VARIABLE_CATALOG_FILE_NAME,
+  type TicketValueKind,
+  type TicketValueKindDefinition,
+  type UserFieldDefinition
+} from './variable-catalog.js'
 
 /**
  * A fixture's expected outcome, as recorded in `schemas/fixtures/manifest.json`.
@@ -71,4 +77,27 @@ export function listFixtureNames(): string[] {
 /** Reads a fixture by file name, e.g. `01-linear-role-css.json`. */
 export function readFixture(fileName: string): string {
   return readFileSync(join(FIXTURES_DIR, fileName), 'utf-8')
+}
+
+/** The variable catalogue as the artefact declares it. */
+export interface VariableCatalogDocument {
+  catalog_version: number
+  user_fields: { fields: UserFieldDefinition[] }
+  ticket_fields: {
+    default_value_kind: TicketValueKind
+    value_kinds: TicketValueKindDefinition[]
+  }
+}
+
+/**
+ * The parsed variable catalogue artefact.
+ *
+ * This is the file both mirrors reproduce — `variable-catalog.ts` here and `VariableCatalog.cs` in
+ * the NuGet twin. A consumer proving it covers every field reads it from here rather than trusting
+ * the mirror of its own language, which is what makes such a test a gate instead of a tautology.
+ */
+export function readVariableCatalog(): VariableCatalogDocument {
+  return JSON.parse(
+    readFileSync(join(SCHEMAS_DIR, VARIABLE_CATALOG_FILE_NAME), 'utf-8')
+  ) as VariableCatalogDocument
 }

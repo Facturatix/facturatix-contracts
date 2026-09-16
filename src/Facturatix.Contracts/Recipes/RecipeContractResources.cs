@@ -21,11 +21,22 @@ public static class RecipeContractResources
     private const string SchemaResource = "schemas/" + RecipeSchemaV2.SchemaFileName;
     private const string ManifestResource = "schemas/fixtures/manifest.json";
     private const string FixturePrefix = "schemas/fixtures/";
+    private const string VariableCatalogResource = "schemas/" + VariableCatalog.FileName;
 
     private static readonly Assembly Assembly = typeof(RecipeContractResources).Assembly;
 
     /// <summary>The v2 JSON Schema document, verbatim.</summary>
     public static string ReadSchema() => ReadResource(SchemaResource);
+
+    /// <summary>
+    /// The variable catalogue document, verbatim.
+    /// </summary>
+    /// <remarks>
+    /// This is the artefact <see cref="VariableCatalog"/> mirrors. A coverage test reads it from
+    /// here rather than from the mirror, so that "the resolver handles every catalogued field"
+    /// cannot be satisfied by a mirror and a resolver that are wrong in the same way.
+    /// </remarks>
+    public static string ReadVariableCatalog() => ReadResource(VariableCatalogResource);
 
     /// <summary>The fixture manifest listing each fixture's expected verdict and canonical hash.</summary>
     public static string ReadManifest() => ReadResource(ManifestResource);

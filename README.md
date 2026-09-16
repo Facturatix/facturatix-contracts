@@ -222,6 +222,19 @@ dotnet run --project tools/generate-manifest -- schemas/fixtures
 - **MINOR** — new optional contract fields, new error codes
 - **MAJOR** — renaming or removing anything a consumer branches on
 
+**2.5.0** adds the variable catalogue: `schemas/variable-catalog.v1.json`, mirrored by
+`VariableCatalog` (C#) and `variable-catalog.ts`, with the mirrors held against the artefact by
+`scripts/verify-contract-parity.mjs`. It closes the parts of a variable's `source` that the schema
+leaves open. The `variableSource` pattern bounds only the namespace, so `user.fiscal.rfk` and
+`user.nombre` are valid documents that publish, reach a worker, resolve to nothing and fail the
+ticket with `variable_missing` — for a typo three validation layers accepted. The catalogue closes
+`user.*` as a set (every value the platform stores, each marked `bindable` or `stored_only`, and
+`always` or `optional`), and closes the *vocabulary* of `ticket.extracted.*` without closing its
+membership: a recipe may ask the vision model for any field a portal needs, but only the catalogued
+leaf names carry a normalizer, and that distinction decides whether an amount arrives as `1234.50`
+or as `$ 1,234.50`. MINOR because it is additive: no existing document changes meaning and no
+canonical hash moves.
+
 **2.4.0** adds one error code, `ticket_portal_verdict_forbids_fail`
 (`TICKET_PORTAL_VERDICT_FORBIDS_FAIL`), for defect A4 of the exposure-channel audit. Failing a
 ticket is the only path that tells a user "we could not invoice this", and it checked nothing

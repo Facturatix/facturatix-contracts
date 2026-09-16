@@ -1,0 +1,47 @@
+{
+  "$comment": "Where a recipe variable's value comes from, and what the platform does with it. The schema's variableSource pattern only bounds the NAMESPACE; this file closes the parts that are closed. Hand-edited, mirrored by variable-catalog.ts and VariableCatalog.cs, and held by verify-contract-parity.mjs plus a coverage test in each consumer.",
+  "catalog_version": 1,
+  "user_fields": {
+    "$comment": "Every value the platform stores about the account holder. 'support' says whether a recipe may bind it; 'availability' whether a completed profile is guaranteed to have a value.",
+    "fields": [
+      { "source": "user.email", "support": "bindable", "availability": "optional" },
+      { "source": "user.name", "support": "bindable", "availability": "optional" },
+      { "source": "user.fiscal.rfc", "support": "bindable", "availability": "always" },
+      { "source": "user.fiscal.legal_name", "support": "bindable", "availability": "always" },
+      { "source": "user.fiscal.tax_regime", "support": "bindable", "availability": "always" },
+      { "source": "user.fiscal.email", "support": "bindable", "availability": "optional" },
+      { "source": "user.fiscal.postal_code", "support": "bindable", "availability": "always" },
+      { "source": "user.fiscal.street", "support": "bindable", "availability": "optional" },
+      { "source": "user.fiscal.exterior_number", "support": "bindable", "availability": "optional" },
+      { "source": "user.fiscal.interior_number", "support": "bindable", "availability": "optional" },
+      { "source": "user.fiscal.neighborhood", "support": "bindable", "availability": "optional" },
+      { "source": "user.fiscal.municipality", "support": "bindable", "availability": "optional" },
+      { "source": "user.fiscal.state", "support": "bindable", "availability": "optional" },
+      { "source": "user.fiscal.reference", "support": "bindable", "availability": "optional" },
+      { "source": "user.fiscal.country", "support": "bindable", "availability": "always" },
+      { "source": "user.fiscal.is_foreign", "support": "stored_only", "availability": "always" },
+      {
+        "source": "user.fiscal.is_politically_exposed",
+        "support": "stored_only",
+        "availability": "always"
+      },
+      { "source": "user.fiscal.declares_ieps", "support": "stored_only", "availability": "always" }
+    ]
+  },
+  "ticket_fields": {
+    "$comment": "The leaf of ticket.extracted.<leaf> is both the JSON key the vision model is asked to return and the selector of the normalizer applied to the answer. Membership is open — a portal may need a field no other portal has — but these leaf names carry a normalizer, and any other leaf is passed through as plain text.",
+    "default_value_kind": "text",
+    "value_kinds": [
+      { "kind": "tax_id", "leaves": ["rfc", "tax_id", "taxid"] },
+      { "kind": "postal_code", "leaves": ["postal_code", "codigo_postal", "cp", "zip"] },
+      {
+        "kind": "amount",
+        "leaves": ["total", "amount", "importe", "monto", "subtotal", "iva", "impuesto"]
+      },
+      {
+        "kind": "date",
+        "leaves": ["date", "fecha", "issue_date", "fecha_emision", "ticket_date"]
+      }
+    ]
+  }
+}

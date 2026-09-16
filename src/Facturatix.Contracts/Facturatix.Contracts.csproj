@@ -24,10 +24,14 @@
       `null` for them — a hash the API could never reproduce. The npm twin (@facturatix/contracts)
       publishes from the same commit with the same version, so one number identifies the contract in
       both ecosystems.
+
+      2.5.0 adds the variable catalogue (`schemas/variable-catalog.v1.json` with its two mirrors):
+      the closed set of `user.*` sources a recipe may bind, and the `ticket.extracted.*` leaf names
+      that carry a normalizer. Additive — no existing document changes meaning, and no hash moves.
     -->
-    <Version>2.4.0</Version>
-    <AssemblyVersion>2.4.0.0</AssemblyVersion>
-    <FileVersion>2.4.0.0</FileVersion>
+    <Version>2.5.0</Version>
+    <AssemblyVersion>2.5.0.0</AssemblyVersion>
+    <FileVersion>2.5.0.0</FileVersion>
 
     <!-- NuGet package metadata -->
     <Authors>Facturatix</Authors>
