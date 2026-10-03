@@ -92,6 +92,18 @@
       "expectedValid": false,
       "expectedCodes": ["action_type_unknown"],
       "canonicalHash": "b4d0311f206542ede77c4ba4815751fd8b39c232aef516a8b4b4485e8ebb62f9"
+    },
+    {
+      "file": "12-select-with-options.json",
+      "expectedValid": true,
+      "expectedCodes": [],
+      "canonicalHash": "173c8b888ac50ee6661aee9cb219ab0ce37b8f834556901d6ab4037a924240b9"
+    },
+    {
+      "file": "13-invalid-select-options.json",
+      "expectedValid": false,
+      "expectedCodes": ["action_field_invalid", "unknown_property"],
+      "canonicalHash": "890235e01d7c4b401ac3fb7571bcf6d65da6dfe659aa8a827fcac4f19ea43fd1"
     }
   ]
 }

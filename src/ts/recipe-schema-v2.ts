@@ -48,6 +48,18 @@ export const ALL_ACTIONS: readonly string[] = [
   ACTIONS.WAIT_SELECTOR
 ]
 
+/**
+ * Bounds of the choices a `select` action may carry in `options`.
+ *
+ * The ceiling is generous on purpose — a chain's branch list runs to hundreds — but it exists,
+ * because the list travels inside the document and into the prompt of whoever decides the value.
+ * A producer facing a longer list omits `options` rather than truncating it: a list missing the
+ * right choice is worse than no list, since it invites a confident wrong answer.
+ */
+export const SELECT_OPTIONS = {
+  MAX_COUNT: 1000
+} as const
+
 /** How an element is addressed. Playwright source strings are never a locator. */
 export const LOCATOR_STRATEGIES = {
   ROLE: 'role',
@@ -240,6 +252,14 @@ export interface RecipeCondition {
   check_timeout_ms?: number
 }
 
+/** One choice a portal's `<select>` offered when the step was recorded. */
+export interface RecipeSelectOption {
+  /** What selecting the option submits — the string a decided value must equal. Never empty. */
+  value: string
+  /** The text the portal shows for the option. */
+  label: string
+}
+
 /** A single executable step. */
 export interface RecipeAction {
   id: string
@@ -253,6 +273,11 @@ export interface RecipeAction {
   condition?: RecipeCondition
   locator?: RecipeLocator
   value?: string
+  /**
+   * `select` only: every choice the portal listed, in its order. Context for deciding `value`
+   * from a ticket; the executor still selects exactly `value`.
+   */
+  options?: RecipeSelectOption[]
   url?: string
   key?: string
   duration_ms?: number

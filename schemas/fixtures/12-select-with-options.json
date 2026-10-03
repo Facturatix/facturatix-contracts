@@ -1,0 +1,40 @@
+{
+  "schema_version": 2,
+  "variables": [
+    { "name": "sucursal", "source": "ticket.extracted.sucursal", "required": true },
+    { "name": "folio", "source": "ticket.extracted.folio", "required": true }
+  ],
+  "actions": [
+    { "id": "open", "action": "goto", "url": "https://facturacion.comercio.mx/" },
+    {
+      "id": "choose-branch",
+      "action": "select",
+      "locator": { "strategy": "role", "role": "combobox", "name": "SUCURSAL" },
+      "value": "{{sucursal}}",
+      "options": [
+        { "value": "61", "label": "CAMPUS" },
+        { "value": "62", "label": "JUÁREZ" },
+        { "value": "63", "label": "PASEO DE LOS LEONES" }
+      ]
+    },
+    {
+      "id": "type-folio",
+      "action": "fill",
+      "locator": { "strategy": "role", "role": "textbox", "name": "FOLIO" },
+      "value": "{{folio}}"
+    },
+    {
+      "id": "submit",
+      "action": "click",
+      "locator": { "strategy": "role", "role": "button", "name": "Facturar" }
+    }
+  ],
+  "edges": [
+    { "from": "open", "to": "choose-branch" },
+    { "from": "choose-branch", "to": "type-folio" },
+    { "from": "type-folio", "to": "submit" }
+  ],
+  "completion": {
+    "assertions": [{ "type": "url_matches", "pattern": "/confirmacion" }]
+  }
+}

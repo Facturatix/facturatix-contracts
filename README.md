@@ -20,7 +20,7 @@ and both implementations of the validator must reproduce the same verdict on it.
 | Namespace / module                          | Contents                                                                                                                                   |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `schemas/recipe-execution.schema.v2.json`   | The recipe execution contract v2 (JSON Schema 2020-12) plus the semantic rules it cannot express                                           |
-| `schemas/fixtures/`                         | 15 fixtures and a generated manifest with each one's verdict and canonical hash                                                            |
+| `schemas/fixtures/`                         | 17 fixtures and a generated manifest with each one's verdict and canonical hash                                                            |
 | `Facturatix.Contracts.Recipes`              | `RecipeSchemaV2`, `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, `RecipeContractResources`                                              |
 | `Facturatix.Contracts.Errors`               | `ApiErrorCodes` — the machine-readable `code` carried by every API `ProblemDetails`                                                        |
 | `Facturatix.Contracts.Tickets` / `.Recipes` | Ticket and recipe-version lifecycle status constants, rejection reasons, execution channels, pilot consent codes and pilot abandon reasons |
@@ -75,6 +75,9 @@ wait, wait_selector`. `dialog_accept`, `dialog_dismiss`, `popup`, `custom`, `upl
    the portal did anything.
 6. **Unknown means invalid.** An unrecognised condition type, verb or property is a rejection at
    validation time — never a value quietly dropped at execution time.
+7. **`select.options` is context, not an instruction.** It lists what the portal's `<select>`
+   offered when the step was recorded, so whoever decides the value from a ticket chooses among
+   the portal's real choices. The executor still selects exactly `value`.
 
 ## Canonical hash
 
@@ -221,6 +224,18 @@ dotnet run --project tools/generate-manifest -- schemas/fixtures
 - **PATCH** — new constants, clarified messages
 - **MINOR** — new optional contract fields, new error codes
 - **MAJOR** — renaming or removing anything a consumer branches on
+
+**2.6.0** lets a `select` action carry `options`: every choice the portal's `<select>` offered
+when the step was recorded, as `{ "value", "label" }` pairs in the portal's order, at most
+`SELECT_OPTIONS.MAX_COUNT` (`RecipeSchemaV2.SelectOptions.MaxCount`, 1000). A select step used to
+say only which value to pick — `61` — and nothing about what the other choices were or what `61`
+means, so a recipe that reads the branch off the ticket asked the vision model for a string it
+could only guess: the ticket prints `CAMPUS`, the portal submits `61`. The options are context,
+never an instruction — the executor still selects exactly `value` — and they let the Generator show
+the model the portal's real choices and refuse an answer that is none of them. A value appears once
+per list (`select-option-values-unique`), and `options` on any other verb is an `unknown_property`.
+MINOR because it is additive: a document without `options` validates and hashes exactly as before.
+Two fixtures join the corpus, a valid select with options and an invalid list.
 
 **2.5.0** adds the variable catalogue: `schemas/variable-catalog.v1.json`, mirrored by
 `VariableCatalog` (C#) and `variable-catalog.ts`, with the mirrors held against the artefact by

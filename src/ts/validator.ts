@@ -31,6 +31,7 @@ import {
   LOCATOR_STRATEGIES,
   ROOT_PROPERTIES,
   SCHEMA_VERSION,
+  SELECT_OPTIONS,
   VALIDATION_CODES as CODES
 } from './recipe-schema-v2.js'
 
@@ -350,8 +351,9 @@ function verbProperties(verb: string): string[] {
     case ACTIONS.GOTO:
       return ['url']
     case ACTIONS.FILL:
-    case ACTIONS.SELECT:
       return ['locator', 'value']
+    case ACTIONS.SELECT:
+      return ['locator', 'value', 'options']
     case ACTIONS.PRESS:
       return ['locator', 'key']
     case ACTIONS.WAIT:
@@ -410,6 +412,7 @@ function validateVerbFields(
       } else {
         validatePlaceholders(value, `${path}.value`, variables, issues)
       }
+      if (verb === ACTIONS.SELECT) validateSelectOptions(action, path, issues)
       break
     }
 
@@ -446,6 +449,80 @@ function validateVerbFields(
       requireLocator(action, path, issues)
       break
   }
+}
+
+/**
+ * Validates the choices a `select` step carries, when it carries any.
+ *
+ * They are context for whoever decides the step's value from a ticket, never an instruction — the
+ * executor still selects exactly `value`. So the rules are only the ones that keep that context
+ * unambiguous: at least one choice and no more than the ceiling, each with a non-empty value and
+ * a label, and no value listed twice, since a value naming two labels maps back to neither.
+ */
+function validateSelectOptions(
+  action: Record<string, unknown>,
+  path: string,
+  issues: RecipeValidationIssue[]
+): void {
+  if (!('options' in action)) return
+
+  const optionsPath = `${path}.options`
+  const options = action.options
+
+  if (
+    !Array.isArray(options) ||
+    options.length === 0 ||
+    options.length > SELECT_OPTIONS.MAX_COUNT
+  ) {
+    issues.push(
+      issue(
+        CODES.ACTION_FIELD_INVALID,
+        optionsPath,
+        `options must be an array of 1 to ${SELECT_OPTIONS.MAX_COUNT} choices.`
+      )
+    )
+    return
+  }
+
+  const seenValues = new Set<string>()
+
+  options.forEach((entry, index) => {
+    const entryPath = `${optionsPath}[${index}]`
+
+    if (!isPlainObject(entry)) {
+      issues.push(issue(CODES.ACTION_FIELD_INVALID, entryPath, 'Each option must be an object.'))
+      return
+    }
+
+    rejectUnknownProperties(entry, ['value', 'label'], entryPath, issues)
+
+    const value = readString(entry, 'value')
+    if (value === null || value.length === 0) {
+      issues.push(
+        issue(
+          CODES.ACTION_FIELD_INVALID,
+          `${entryPath}.value`,
+          'An option needs a non-empty string value.'
+        )
+      )
+    } else if (seenValues.has(value)) {
+      issues.push(
+        issue(
+          CODES.ACTION_FIELD_INVALID,
+          `${entryPath}.value`,
+          `Option value '${value}' is listed more than once.`
+        )
+      )
+    } else {
+      seenValues.add(value)
+    }
+
+    if (readString(entry, 'label') === null) {
+      issues.push(
+        issue(CODES.ACTION_FIELD_INVALID, `${entryPath}.label`, 'An option needs a string label.')
+      )
+    }
+  })
 }
 
 function requireTemplateString(

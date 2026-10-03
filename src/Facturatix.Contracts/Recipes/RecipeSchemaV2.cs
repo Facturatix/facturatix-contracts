@@ -48,6 +48,21 @@ public static class RecipeSchemaV2
         };
     }
 
+    /// <summary>
+    /// Bounds of the choices a <c>select</c> action may carry in <c>options</c>.
+    /// <para>
+    /// The ceiling is generous on purpose — a chain's branch list runs to hundreds — but it exists,
+    /// because the list travels inside the document and into the prompt of whoever decides the
+    /// value. A producer facing a longer list omits <c>options</c> rather than truncating it: a list
+    /// missing the right choice is worse than no list, since it invites a confident wrong answer.
+    /// </para>
+    /// </summary>
+    public static class SelectOptions
+    {
+        /// <summary>Most choices one select action may list.</summary>
+        public const int MaxCount = 1000;
+    }
+
     /// <summary>How an element is addressed. Playwright source strings are never a locator.</summary>
     public static class LocatorStrategies
     {

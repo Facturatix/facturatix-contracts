@@ -349,8 +349,9 @@ public static class RecipeSchemaV2Validator
             case RecipeSchemaV2.Actions.Goto:
                 return new[] { "url" };
             case RecipeSchemaV2.Actions.Fill:
-            case RecipeSchemaV2.Actions.Select:
                 return new[] { "locator", "value" };
+            case RecipeSchemaV2.Actions.Select:
+                return new[] { "locator", "value", "options" };
             case RecipeSchemaV2.Actions.Press:
                 return new[] { "locator", "key" };
             case RecipeSchemaV2.Actions.Wait:
@@ -413,6 +414,11 @@ public static class RecipeSchemaV2Validator
                     ValidatePlaceholders(value.GetString(), path + ".value", variables, issues);
                 }
 
+                if (verb == RecipeSchemaV2.Actions.Select)
+                {
+                    ValidateSelectOptions(action, path, issues);
+                }
+
                 break;
 
             case RecipeSchemaV2.Actions.Press:
@@ -444,6 +450,75 @@ public static class RecipeSchemaV2Validator
             default:
                 RequireLocator(action, path, issues);
                 break;
+        }
+    }
+
+    /// <summary>
+    /// Validates the choices a <c>select</c> step carries, when it carries any.
+    /// </summary>
+    /// <remarks>
+    /// They are context for whoever decides the step's value from a ticket, never an instruction —
+    /// the executor still selects exactly <c>value</c>. So the rules are only the ones that keep
+    /// that context unambiguous: at least one choice and no more than the ceiling, each with a
+    /// non-empty value and a label, and no value listed twice, since a value naming two labels maps
+    /// back to neither. O(n) over the options, with one hash-set lookup each.
+    /// </remarks>
+    private static void ValidateSelectOptions(
+        JsonElement action, string path, List<RecipeValidationIssue> issues)
+    {
+        if (!action.TryGetProperty("options", out var options)) return;
+
+        var optionsPath = path + ".options";
+
+        if (options.ValueKind != JsonValueKind.Array ||
+            options.GetArrayLength() == 0 ||
+            options.GetArrayLength() > RecipeSchemaV2.SelectOptions.MaxCount)
+        {
+            issues.Add(new RecipeValidationIssue(
+                Codes.ActionFieldInvalid, optionsPath,
+                "options must be an array of 1 to " +
+                RecipeSchemaV2.SelectOptions.MaxCount.ToString(CultureInfo.InvariantCulture) +
+                " choices."));
+            return;
+        }
+
+        var allowed = new HashSet<string>(new[] { "value", "label" }, StringComparer.Ordinal);
+        var seenValues = new HashSet<string>(StringComparer.Ordinal);
+        var index = 0;
+
+        foreach (var entry in options.EnumerateArray())
+        {
+            var entryPath = optionsPath + "[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+            index++;
+
+            if (entry.ValueKind != JsonValueKind.Object)
+            {
+                issues.Add(new RecipeValidationIssue(
+                    Codes.ActionFieldInvalid, entryPath, "Each option must be an object."));
+                continue;
+            }
+
+            RejectUnknownProperties(entry, allowed, entryPath, issues);
+
+            var value = ReadString(entry, "value");
+            if (string.IsNullOrEmpty(value))
+            {
+                issues.Add(new RecipeValidationIssue(
+                    Codes.ActionFieldInvalid, entryPath + ".value",
+                    "An option needs a non-empty string value."));
+            }
+            else if (!seenValues.Add(value!))
+            {
+                issues.Add(new RecipeValidationIssue(
+                    Codes.ActionFieldInvalid, entryPath + ".value",
+                    "Option value '" + value + "' is listed more than once."));
+            }
+
+            if (ReadString(entry, "label") == null)
+            {
+                issues.Add(new RecipeValidationIssue(
+                    Codes.ActionFieldInvalid, entryPath + ".label", "An option needs a string label."));
+            }
         }
     }
 
