@@ -7,4 +7,9 @@ overrides:
   # Scoped to the 5.x line and upper-bounded on purpose, as in the other repositories: an
   # unbounded floor resolves to the newest release on any line, and a future 6.x could change
   # the export shape ESLint relies on.
-  'brace-expansion@5': '>=5.0.9 <6'
+  #
+  # Raised to >=5.0.12 for three later advisories against the same copy:
+  #   GHSA-6j4f-fj2g-mc7p (high)     — unbounded recursion in parseCommaParts, fixed in 5.0.10
+  #   GHSA-qhr7-859c-m2p7 (high)     — unbounded recursion on nested brace groups, fixed in 5.0.11
+  #   GHSA-q2hr-2g5m-vwhr (moderate) — quadratic `{a},b}` rewrite, CPU exhaustion, fixed in 5.0.12
+  'brace-expansion@5': '>=5.0.12 <6'
