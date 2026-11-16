@@ -13,3 +13,10 @@ overrides:
   #   GHSA-qhr7-859c-m2p7 (high)     — unbounded recursion on nested brace groups, fixed in 5.0.11
   #   GHSA-q2hr-2g5m-vwhr (moderate) — quadratic `{a},b}` rewrite, CPU exhaustion, fixed in 5.0.12
   'brace-expansion@5': '>=5.0.12 <6'
+  # GHSA-g3hv-75wg-m249 (moderate, published 2026-10-30): minimatch amplifies glob parts into a
+  # denial of service. Every release from 7.0.0 up to 11.0.0 is in range, so the 10.x copy that
+  # eslint resolves (`eslint`, `@eslint/config-array`) needs the 11.x line; 11.0.1 is the first
+  # release outside it. Scoped to the 10.x copy and upper-bounded, for the same reason as above.
+  # It is lint-time only, and `pnpm lint` is the proof that the `{ Minimatch }` export ESLint
+  # relies on is still there.
+  'minimatch@10': '>=11.0.1 <12'
