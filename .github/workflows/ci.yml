@@ -215,8 +215,15 @@ jobs:
             --skip-duplicate
 
       # ─── npm ────────────────────────────────────────────────────────────
+      # `setup-node` writes an .npmrc whose credential is `${NODE_AUTH_TOKEN}`, and since v7 it no
+      # longer exports a placeholder for that variable (v4 did), so a step that does not set it
+      # reads an empty one: pnpm 11 only warns ("Failed to replace env in config"), which is why
+      # this worked, but a job that publishes should not depend on a warning staying a warning.
+      # The token goes on the steps that talk to the registry, not on the whole job.
       - name: Install npm dependencies
         run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build npm package
         run: pnpm run build
