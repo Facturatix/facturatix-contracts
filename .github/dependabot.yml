@@ -1,0 +1,75 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Dependabot — dependency and action updates
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# WHY THIS FILE EXISTS
+# ────────────────────
+# Nothing moved this repository's versions, so a sweep on 2026-11-16 found the lint toolchain a
+# release cycle behind and every GitHub Action three majors back. The weekly audit reports
+# advisories; it does not propose the fix. This file turns each into a pull request that the same
+# CI validates.
+#
+# There is no NuGet entry on purpose: the .NET projects declare no PackageReference (the SDK
+# provides everything), so there is nothing for it to watch. If one is ever added, a bump to it is
+# a change to what consumers resolve, which is a contract release rather than routine maintenance.
+version: 2
+
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Mexico_City"
+    groups:
+      production:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+      development:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+    # Remaining majors are reviewed one at a time. Each entry is blocked upstream, so its PR could
+    # only ever arrive red, and each carries the condition to check before deleting it.
+    ignore:
+      # TypeScript 7 falls outside the range typescript-eslint declares: its latest asks for
+      # `typescript: >=4.8.4 <6.1.0`.
+      #
+      # DELETE WHEN: `npm view typescript-eslint@latest peerDependencies.typescript` admits `>=7`.
+      # Ignored by version rather than by `semver-major` so the update returns on its own the day
+      # the range opens.
+      - dependency-name: "typescript"
+        versions: [">=7"]
+
+      # `@types/node` describes the runtime, so its major has to be the Node major the project
+      # runs (24, in `engines`). This repository still carries the 22 line, and moving it to 24 is
+      # a deliberate one-line change, not something for the bot to choose between 25 and 26.
+      #
+      # DELETE WHEN: `@types/node` is on the Node major in `engines`; minors and patches arrive on
+      # their own meanwhile.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+
+  # Workflow actions are third-party code running with the repository's GITHUB_TOKEN, and the
+  # publish job pushes packages with it. They are referenced by floating major tag, so minors and
+  # patches arrive by themselves; what moves a major is this entry. A major of setup-node changes
+  # how NODE_AUTH_TOKEN is handled, which is exactly what the publish job relies on — so its PR
+  # needs a read of that job, not just a green build.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Mexico_City"
+    groups:
+      actions:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci(deps)"
