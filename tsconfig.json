@@ -7,8 +7,11 @@
     // through TypeScript's CommonJS `__createBinding` output: shipping CJS alone made the Electron
     // renderer build fail with "LOCATOR_STRATEGIES is not exported".
     "target": "ES2022",
-    "module": "CommonJS",
-    "moduleResolution": "Node",
+    // Node16, not CommonJS + Node: `moduleResolution: node10` is deprecated in TypeScript 6 and
+    // removed in 7. The package declares no `type`, so Node16 treats every `.ts` here as CommonJS
+    // and emits what `CommonJS` did; every relative import already carries its `.js` extension.
+    "module": "Node16",
+    "moduleResolution": "Node16",
     "lib": ["ES2022"],
     "types": ["node"],
     "outDir": "dist/cjs",
