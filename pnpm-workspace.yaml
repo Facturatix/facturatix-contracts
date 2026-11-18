@@ -20,3 +20,27 @@ overrides:
   # It is lint-time only, and `pnpm lint` is the proof that the `{ Minimatch }` export ESLint
   # relies on is still there.
   'minimatch@10': '>=11.0.1 <12'
+  # Not a floor — a patched copy, for an advisory no release fixes.
+  #
+  # GHSA-fc5q-39xc-vjpf (high, CVE-2026-112366): picomatch compiles a repeated extglob whose body
+  # holds a wildcard or a negation (`+(*)`, `+(*a)`, `*(a*|b)`, `+(!(a))`) into an unbounded
+  # quantifier nested inside another, so a short near-miss string backtracks exponentially: `+(*)`
+  # against 29 characters blocks the event loop for 30 s. Every published version is in range
+  # (`<=4.0.7`) and none fixes it, so no floor can close it. One copy reaches the tree, at lint
+  # time: picomatch@4 ← tinyglobby, fdir ← typescript-eslint. It compiles globs written in code or
+  # config, none of them a repeated extglob, so no input can trigger it here; it is replaced anyway,
+  # because there is no fixed release to wait for.
+  #
+  # `scripts/shims/picomatch` is the published 4.0.7 package (MIT, LICENSE kept) with
+  # `lib/parse.js` patched. A repeated extglob over a wildcard drops its repetition where that
+  # matches exactly the same strings (`+(*a)` → `*a`, `*(a*|b)` → `(?:b)*(?:a*|b)`, `+(!(a))` →
+  # `!(a)`); any other such form becomes a literal, the safeguard picomatch already applies to
+  # `+(a|aa)`. Upstream's full suite passes on it (1983 tests), and every rewrite was compared with
+  # the unpatched semantics on 354 million inputs without a difference. The web app, the admin
+  # console, the landing and the modeler carry the same bytes, pinned to the same hash.
+  # `scripts/verify-supply-chain.mjs` checks it here, from `pnpm run verify` and in CI. It is not
+  # part of the published package (`files` does not list `scripts/`).
+  #
+  # Delete this line, `scripts/shims/picomatch`, its entry in eslint.config.mjs, the script and its
+  # CI step when picomatch publishes a release outside the advisory's range (4.0.8).
+  'picomatch@4': 'link:./scripts/shims/picomatch'

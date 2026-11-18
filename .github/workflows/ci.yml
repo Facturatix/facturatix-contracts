@@ -146,6 +146,12 @@ jobs:
       - name: Verify every documentation citation resolves
         run: node scripts/check-doc-citations.mjs
 
+      # GHSA-fc5q-39xc-vjpf: picomatch resolves to a patched copy (see pnpm-workspace.yaml). The other
+      # npm repositories assert it in their supply-chain unit test; this package has no unit-test
+      # runner, so it runs here and from `pnpm run verify`, like the citation check above.
+      - name: Verify the patched picomatch stand-in
+        run: node scripts/verify-supply-chain.mjs
+
       - name: Upload package artifact
         uses: actions/upload-artifact@v7
         with:
