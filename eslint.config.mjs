@@ -15,7 +15,20 @@ import eslintPluginPrettier from 'eslint-plugin-prettier'
  * type information, and they are the ones that catch a validator quietly widening to `any`.
  */
 export default tseslint.config(
-  { ignores: ['dist/**', 'node_modules/**', 'nupkg/**', 'src/Facturatix.Contracts/**'] },
+  {
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'nupkg/**',
+      'src/Facturatix.Contracts/**',
+      // Vendored picomatch 4.0.7 (third-party, MIT), standing in for the registry release until
+      // GHSA-fc5q-39xc-vjpf has an upstream fix. It is upstream's CommonJS byte for byte outside
+      // the patch, so this project's rules have nothing to say about it; the patch passes
+      // upstream's own lint and test suite, and scripts/verify-supply-chain.mjs pins the directory
+      // by content hash. See pnpm-workspace.yaml.
+      'scripts/shims/picomatch/**'
+    ]
+  },
 
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
