@@ -72,6 +72,7 @@ const catalog = resources.readVariableCatalog()
 const {
   USER_FIELDS,
   TICKET_VALUE_KINDS,
+  TICKET_REQUEST_FIELDS,
   TICKET_DEFAULT_VALUE_KIND,
   VARIABLE_CATALOG_VERSION
 } = require(join(packageRoot, 'dist', 'cjs', 'variable-catalog.js'))
@@ -116,6 +117,46 @@ if (catalog.ticket_fields.default_value_kind !== TICKET_DEFAULT_VALUE_KIND) {
   )
 }
 
+const artefactRequestFields = JSON.stringify(
+  catalog.ticket_request_fields.fields.map((f) => [f.source, f.pattern, f.default_value])
+)
+const mirrorRequestFields = JSON.stringify(
+  TICKET_REQUEST_FIELDS.map((f) => [f.source, f.pattern, f.defaultValue])
+)
+if (artefactRequestFields !== mirrorRequestFields) {
+  failures.push(
+    `variable catalogue ticket_request_fields: the artefact holds ${artefactRequestFields} but ` +
+      `the TypeScript mirror holds ${mirrorRequestFields}.`
+  )
+}
+
+// A request field is a source the schema must accept, and the schema names each one exactly. A
+// field catalogued here but missing from the validator's pattern would be offered by the Modeler
+// and then rejected at publication; one whose default breaks its own pattern would fail every
+// ticket that relied on the default. Both are checked against the built validator, not assumed.
+for (const field of TICKET_REQUEST_FIELDS) {
+  const probe = {
+    schema_version: 2,
+    variables: [{ name: 'probe', source: field.source, required: true }],
+    actions: [{ id: 'open', action: 'goto', url: 'https://example.mx/' }],
+    edges: [],
+    completion: { assertions: [{ type: 'url_matches', pattern: '/' }] }
+  }
+  const codes = validateRecipeDocument(JSON.stringify(probe)).codes
+  if (codes.includes('variable_source_unknown')) {
+    failures.push(
+      `variable catalogue: '${field.source}' is a ticket request field the validator rejects ` +
+        'as a variable source.'
+    )
+  }
+  if (!new RegExp(field.pattern).test(field.defaultValue)) {
+    failures.push(
+      `variable catalogue: the default '${field.defaultValue}' of '${field.source}' does not ` +
+        `match its own pattern ${field.pattern}.`
+    )
+  }
+}
+
 if (failures.length > 0) {
   console.error('Contract parity FAILED:\n')
   for (const failure of failures) console.error(`  • ${failure}`)
@@ -125,5 +166,6 @@ if (failures.length > 0) {
 console.log(
   `Contract parity OK — ${manifest.fixtures.length} fixtures agree across C# and TypeScript, ` +
     `and the variable catalogue mirror reproduces its ${catalog.user_fields.fields.length} user ` +
-    `fields and ${catalog.ticket_fields.value_kinds.length} ticket value kinds.`
+    `fields, ${catalog.ticket_fields.value_kinds.length} ticket value kinds and ` +
+    `${catalog.ticket_request_fields.fields.length} ticket request field(s).`
 )

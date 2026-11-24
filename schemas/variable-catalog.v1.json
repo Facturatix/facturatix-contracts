@@ -1,5 +1,5 @@
 {
-  "$comment": "Where a recipe variable's value comes from, and what the platform does with it. The schema's variableSource pattern only bounds the NAMESPACE; this file closes the parts that are closed. Hand-edited, mirrored by variable-catalog.ts and VariableCatalog.cs, and held by verify-contract-parity.mjs plus a coverage test in each consumer.",
+  "$comment": "Where a recipe variable's value comes from, and what the platform does with it. The schema's variableSource pattern only bounds the NAMESPACE of user and ticket-image values; this file closes the parts that are closed. Hand-edited, mirrored by variable-catalog.ts and VariableCatalog.cs, and held by verify-contract-parity.mjs plus a coverage test in each consumer.",
   "catalog_version": 1,
   "user_fields": {
     "$comment": "Every value the platform stores about the account holder. 'support' says whether a recipe may bind it; 'availability' whether a completed profile is guaranteed to have a value.",
@@ -41,6 +41,16 @@
       {
         "kind": "date",
         "leaves": ["date", "fecha", "issue_date", "fecha_emision", "ticket_date"]
+      }
+    ]
+  },
+  "ticket_request_fields": {
+    "$comment": "Values the account holder supplies WITH the ticket, as opposed to values read off its image. A closed set: each is a column the API writes at upload, so a source outside it cannot resolve. 'pattern' is the shape the value must have before it may reach a portal — it is typed into a third party's form, so it is validated where it enters and again where it is used. 'default_value' is what the executor resolves when the ticket carries none, which makes every field here available to a required variable.",
+    "fields": [
+      {
+        "source": "ticket.cfdi_use",
+        "pattern": "^[A-Z]{1,2}[0-9]{2}$",
+        "default_value": "G03"
       }
     ]
   }

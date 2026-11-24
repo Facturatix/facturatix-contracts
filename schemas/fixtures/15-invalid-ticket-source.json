@@ -1,0 +1,29 @@
+{
+  "schema_version": 2,
+  "variables": [
+    { "name": "uso_cfdi", "source": "ticket.cfdi_usage", "required": true },
+    { "name": "forma_pago", "source": "ticket.forma_pago", "required": true }
+  ],
+  "actions": [
+    { "id": "open", "action": "goto", "url": "https://facturacion.comercio.mx/" },
+    {
+      "id": "choose-cfdi-use",
+      "action": "select",
+      "locator": { "strategy": "role", "role": "combobox", "name": "Uso de CFDI" },
+      "value": "{{uso_cfdi}}"
+    },
+    {
+      "id": "choose-payment",
+      "action": "select",
+      "locator": { "strategy": "role", "role": "combobox", "name": "Forma de pago" },
+      "value": "{{forma_pago}}"
+    }
+  ],
+  "edges": [
+    { "from": "open", "to": "choose-cfdi-use" },
+    { "from": "choose-cfdi-use", "to": "choose-payment" }
+  ],
+  "completion": {
+    "assertions": [{ "type": "url_matches", "pattern": "/confirmacion" }]
+  }
+}

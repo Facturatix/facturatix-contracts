@@ -148,13 +148,25 @@ export const ALL_EDGE_BRANCHES: readonly string[] = [
 ]
 
 /**
- * Namespaces a variable value may come from. Anything else is rejected at validation time, so the
+ * Where a variable value may come from. Anything else is rejected at validation time, so the
  * executor never has to guess where a value should have come from.
+ *
+ * Three namespaces — what the platform stores about the account holder and what it reads off the
+ * ticket image — and one exact source outside them, {@link VARIABLE_SOURCES.TICKET_CFDI_USE}.
  */
 export const VARIABLE_SOURCES = {
   USER_PREFIX: 'user.',
   USER_FISCAL_PREFIX: 'user.fiscal.',
   TICKET_EXTRACTED_PREFIX: 'ticket.extracted.',
+  /**
+   * The CFDI use the account holder chose when uploading the ticket (`G03`, `D01`, `S01`…).
+   *
+   * An exact source, not a namespace: it is a choice the user made, not a value read off the
+   * image, and it deliberately does not start with {@link VARIABLE_SOURCES.TICKET_EXTRACTED_PREFIX}
+   * — everything under that prefix is asked of the vision model, persisted as an extracted field
+   * and shown to the user as "what we read from your ticket". None of that is true of this value.
+   */
+  TICKET_CFDI_USE: 'ticket.cfdi_use',
   USER_FISCAL_EMAIL: 'user.fiscal.email',
   USER_FISCAL_TAX_ID: 'user.fiscal.rfc'
 } as const

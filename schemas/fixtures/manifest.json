@@ -104,6 +104,18 @@
       "expectedValid": false,
       "expectedCodes": ["action_field_invalid", "unknown_property"],
       "canonicalHash": "890235e01d7c4b401ac3fb7571bcf6d65da6dfe659aa8a827fcac4f19ea43fd1"
+    },
+    {
+      "file": "14-ticket-cfdi-use.json",
+      "expectedValid": true,
+      "expectedCodes": [],
+      "canonicalHash": "0867705fccc2aefdbb7c899145b6c360609b99fd7b9a1dc65596b14d102b004b"
+    },
+    {
+      "file": "15-invalid-ticket-source.json",
+      "expectedValid": false,
+      "expectedCodes": ["variable_source_unknown"],
+      "canonicalHash": "7d143afd13debcf474009335c5451dd6a1a15c5f6e63064986db1e2a74ec255e"
     }
   ]
 }

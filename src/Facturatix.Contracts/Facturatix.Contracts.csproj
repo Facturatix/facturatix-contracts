@@ -33,7 +33,7 @@
       recorded, so the value a ticket decides is one of the portal's real choices. Additive — a
       document without `options` validates and hashes exactly as before.
     -->
-    <Version>2.6.0</Version>
+    <Version>2.7.0</Version>
     <AssemblyVersion>2.6.0.0</AssemblyVersion>
     <FileVersion>2.6.0.0</FileVersion>
 

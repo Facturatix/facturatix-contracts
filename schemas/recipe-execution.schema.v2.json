@@ -50,9 +50,9 @@
 
   "$defs": {
     "variableSource": {
-      "description": "Canonical origin of a variable value. Only these three namespaces exist.",
+      "description": "Canonical origin of a variable value. Three namespaces — what the platform stores about the account holder (user.*, user.fiscal.*) and what it reads off the ticket image (ticket.extracted.*) — plus the one value the account holder supplies with the ticket: ticket.cfdi_use, the CFDI use chosen at upload. Nothing else exists.",
       "type": "string",
-      "pattern": "^(user\\.fiscal\\.[a-z][a-z0-9_]*|user\\.[a-z][a-z0-9_]*|ticket\\.extracted\\.[a-z][a-z0-9_]*)$"
+      "pattern": "^(user\\.fiscal\\.[a-z][a-z0-9_]*|user\\.[a-z][a-z0-9_]*|ticket\\.extracted\\.[a-z][a-z0-9_]*|ticket\\.cfdi_use)$"
     },
 
     "variable": {

@@ -3,9 +3,9 @@
  *
  * ## Why the schema's pattern is not enough
  *
- * `variableSource` in the JSON Schema bounds the NAMESPACE and nothing else:
- * `^(user\.fiscal\.[a-z][a-z0-9_]*|user\.[a-z][a-z0-9_]*|ticket\.extracted\.[a-z][a-z0-9_]*)$`.
- * Measured against the reference validator, `user.fiscal.rfk` and `user.nombre` are both **valid
+ * For user and ticket-image values, `variableSource` in the JSON Schema bounds the NAMESPACE and
+ * nothing else: `user\.fiscal\.[a-z][a-z0-9_]*`, `user\.[a-z][a-z0-9_]*` and
+ * `ticket\.extracted\.[a-z][a-z0-9_]*`. Measured against the reference validator, `user.fiscal.rfk` and `user.nombre` are both **valid
  * documents**. They publish, reach a worker, resolve to nothing, and fail the ticket with
  * `variable_missing` — for a typo that three validation layers looked at and accepted.
  *
@@ -15,6 +15,7 @@
  *
  * - which user values exist, and which of them may be bound at all
  * - what the platform will do to a value read off a ticket
+ * - which values the account holder supplies with a ticket, and what shape they must have
  *
  * ## The two halves are closed differently, on purpose
  *
@@ -29,6 +30,11 @@
  * `1234.50`; `total_venta` is passed through as the model wrote it, `$ 1,234.50`, straight into the
  * portal's amount field. Two leaf names for the same concept are not synonyms here — one works and
  * one quietly does not.
+ *
+ * **{@link TICKET_REQUEST_FIELDS} is a closed set, and the schema closes it too.** These are the
+ * values a person supplies *with* the ticket rather than values printed on it. Each is a column the
+ * API writes at upload, so the schema names every one of them exactly instead of bounding a
+ * namespace: there is no typo here that validates.
  *
  * ## How the mirrors stay in step
  *
@@ -216,6 +222,89 @@ export function leafOfSource(source: string): string {
 export function ticketValueKindOf(source: string | null | undefined): TicketValueKind {
   if (source === null || source === undefined) return TICKET_DEFAULT_VALUE_KIND
   return TICKET_KIND_BY_LEAF.get(leafOfSource(source)) ?? TICKET_DEFAULT_VALUE_KIND
+}
+
+// ── ticket request fields ─────────────────────────────────────────────────────────────────────
+
+/**
+ * One value the account holder supplies with a ticket.
+ *
+ * Not to be confused with a ticket field: nothing here is read off the image. The vision model is
+ * never asked for it, it is not persisted as an extracted field, and it is not part of what makes
+ * two tickets the same purchase.
+ */
+export interface TicketRequestFieldDefinition {
+  /** The canonical `source` a recipe variable declares, e.g. `ticket.cfdi_use`. */
+  readonly source: string
+  /**
+   * ECMA-262 pattern the value must match, anchored.
+   *
+   * The value is typed into a third party's form, so it is checked where it enters the platform
+   * (the API, at upload) and again where it is used (the executor, before the portal opens). A
+   * pattern in the contract is what lets those two checks be the same check.
+   */
+  readonly pattern: string
+  /**
+   * What the executor resolves when the ticket carries no value.
+   *
+   * It is why every field here is always available to a required variable: a ticket uploaded by a
+   * client that sent nothing still resolves, to the same value every client shows as its default.
+   */
+  readonly defaultValue: string
+}
+
+/**
+ * Every value the account holder supplies with a ticket, in the order the artefact lists them.
+ *
+ * `ticket.cfdi_use` is the SAT `c_UsoCFDI` code chosen at upload. Its pattern is the shape of
+ * that catalogue's codes (`G03`, `D10`, `CP01`), not its membership: which uses exist, and which
+ * of them a given tax regime may declare, change with the SAT's annexes and are validated by the
+ * service that owns the upload, not frozen into a contract version.
+ */
+export const TICKET_REQUEST_FIELDS: readonly TicketRequestFieldDefinition[] = [
+  { source: 'ticket.cfdi_use', pattern: '^[A-Z]{1,2}[0-9]{2}$', defaultValue: 'G03' }
+] as const
+
+/** The request fields keyed by source, for an O(1) lookup. */
+const TICKET_REQUEST_FIELD_BY_SOURCE: ReadonlyMap<string, TicketRequestFieldDefinition> = new Map(
+  TICKET_REQUEST_FIELDS.map((field) => [field.source, field])
+)
+
+/** The sources of {@link TICKET_REQUEST_FIELDS}, in catalogue order. */
+export const TICKET_REQUEST_FIELD_SOURCES: readonly string[] = TICKET_REQUEST_FIELDS.map(
+  (field) => field.source
+)
+
+/**
+ * The definition behind a ticket request source, or `null` when it is not one.
+ *
+ * Complexity: O(1).
+ *
+ * @param source - A variable's declared source.
+ */
+export function findTicketRequestField(
+  source: string | null | undefined
+): TicketRequestFieldDefinition | null {
+  if (source === null || source === undefined) return null
+  return TICKET_REQUEST_FIELD_BY_SOURCE.get(source) ?? null
+}
+
+/**
+ * Whether a value has the shape its request field requires.
+ *
+ * Complexity: O(n) in the length of the value, for a pattern with no backtracking.
+ *
+ * @param source - A ticket request source, e.g. `ticket.cfdi_use`.
+ * @param value - The value to check.
+ * @returns `false` when the source is not a request field or the value does not match its pattern.
+ */
+export function isValidTicketRequestValue(
+  source: string | null | undefined,
+  value: string | null | undefined
+): boolean {
+  const field = findTicketRequestField(source)
+  if (field === null || value === null || value === undefined) return false
+  return new RegExp(field.pattern).test(value)
 }
 
 // ── artefact identity ─────────────────────────────────────────────────────────────────────────
