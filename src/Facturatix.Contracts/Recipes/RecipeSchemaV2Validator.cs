@@ -28,7 +28,7 @@ public static class RecipeSchemaV2Validator
         new Regex("^[a-z][a-z0-9_]*$", RegexOptions.CultureInvariant);
 
     private static readonly Regex VariableSourcePattern = new Regex(
-        @"^(user\.fiscal\.[a-z][a-z0-9_]*|user\.[a-z][a-z0-9_]*|ticket\.extracted\.[a-z][a-z0-9_]*)$",
+        @"^(user\.fiscal\.[a-z][a-z0-9_]*|user\.[a-z][a-z0-9_]*|ticket\.extracted\.[a-z][a-z0-9_]*|ticket\.cfdi_use)$",
         RegexOptions.CultureInvariant);
 
     /// <summary>Matches <c>{{ name }}</c> placeholders inside action values and urls.</summary>
@@ -206,7 +206,7 @@ public static class RecipeSchemaV2Validator
             {
                 issues.Add(new RecipeValidationIssue(
                     Codes.VariableSourceUnknown, path + ".source",
-                    "A variable source must be under user.*, user.fiscal.* or ticket.extracted.*."));
+                    "A variable source must be under user.*, user.fiscal.* or ticket.extracted.*, or be ticket.cfdi_use."));
             }
             else
             {

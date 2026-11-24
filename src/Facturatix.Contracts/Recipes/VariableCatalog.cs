@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Facturatix.Contracts.Recipes;
 
@@ -132,8 +133,34 @@ public static class VariableCatalog
     /// </summary>
     public const string TicketDefaultValueKind = ValueKinds.Text;
 
+    /// <summary>
+    /// Every value the account holder supplies WITH a ticket, in the order the artefact lists
+    /// them. A closed set, and the schema closes it too: each is a column the API writes at
+    /// upload, so the schema names every one exactly instead of bounding a namespace.
+    /// </summary>
+    /// <remarks>
+    /// <c>ticket.cfdi_use</c> is the SAT <c>c_UsoCFDI</c> code chosen at upload. Its pattern is the
+    /// shape of that catalogue's codes (<c>G03</c>, <c>D10</c>, <c>CP01</c>), not its membership:
+    /// which uses exist, and which of them a given tax regime may declare, change with the SAT's
+    /// annexes and are validated by the service that owns the upload, not frozen into a contract
+    /// version.
+    /// </remarks>
+    public static readonly IReadOnlyList<TicketRequestFieldDefinition> TicketRequestFields = new[]
+    {
+        new TicketRequestFieldDefinition(
+            RecipeSchemaV2.VariableSources.TicketCfdiUse, "^[A-Z]{1,2}[0-9]{2}$", "G03"),
+    };
+
     private static readonly IReadOnlyDictionary<string, UserFieldDefinition> UserFieldBySource =
         UserFields.ToDictionary(field => field.Source, StringComparer.Ordinal);
+
+    private static readonly IReadOnlyDictionary<string, TicketRequestFieldDefinition>
+        TicketRequestFieldBySource =
+            TicketRequestFields.ToDictionary(field => field.Source, StringComparer.Ordinal);
+
+    // Evaluation budget for the request-field patterns. They are this package's own and have no
+    // backtracking, so the timeout is a guard against a future edit, not against today's input.
+    private static readonly TimeSpan RequestPatternTimeout = TimeSpan.FromSeconds(1);
 
     private static readonly IReadOnlyDictionary<string, string> TicketKindByLeaf =
         TicketValueKinds
@@ -163,6 +190,59 @@ public static class VariableCatalog
     /// <param name="source">A variable's declared source.</param>
     public static bool IsBindableUserField(string? source) =>
         FindUserField(source)?.Support == Support.Bindable;
+
+    /// <summary>
+    /// The definition behind a ticket request source, or <see langword="null"/> when it is not
+    /// one. O(1).
+    /// </summary>
+    /// <param name="source">A variable's declared source.</param>
+    public static TicketRequestFieldDefinition? FindTicketRequestField(string? source) =>
+        source is not null && TicketRequestFieldBySource.TryGetValue(source, out var field)
+            ? field
+            : null;
+
+    /// <summary>
+    /// Whether a value has the shape its request field requires.
+    /// </summary>
+    /// <param name="source">A ticket request source, e.g. <c>ticket.cfdi_use</c>.</param>
+    /// <param name="value">The value to check.</param>
+    /// <returns>
+    /// <see langword="false"/> when the source is not a request field, the value is
+    /// <see langword="null"/>, or it does not match the field's pattern.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// The value is typed into a third party's form, so the same check runs where it enters the
+    /// platform (the API, at upload) and where it is used (the executor, before a portal opens).
+    /// O(n) in the length of the value.
+    /// </para>
+    /// <para>
+    /// The match must span the whole value, checked by length rather than left to the pattern's
+    /// anchors. The patterns are ECMA-262, where <c>$</c> matches only at the very end; .NET's
+    /// <c>$</c> also matches before a final line feed, so <c>"G03\n"</c> would pass here and fail
+    /// in the TypeScript mirror — and the difference is a second line typed into a portal.
+    /// </para>
+    /// </remarks>
+    public static bool IsValidTicketRequestValue(string? source, string? value)
+    {
+        var field = FindTicketRequestField(source);
+        if (field is null || value is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            var match = Regex.Match(
+                value, field.Pattern, RegexOptions.CultureInvariant, RequestPatternTimeout);
+
+            return match.Success && match.Index == 0 && match.Length == value.Length;
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>
     /// What the platform will do to the value read for a ticket source. O(1).
@@ -203,6 +283,18 @@ public static class VariableCatalog
 /// <param name="Support">One of <see cref="VariableCatalog.Support"/>.</param>
 /// <param name="Availability">One of <see cref="VariableCatalog.Availability"/>.</param>
 public sealed record UserFieldDefinition(string Source, string Support, string Availability);
+
+/// <summary>
+/// One value the account holder supplies with a ticket. Nothing here is read off the image: the
+/// vision model is never asked for it and it is not persisted as an extracted field.
+/// </summary>
+/// <param name="Source">The canonical <c>source</c> a recipe variable declares.</param>
+/// <param name="Pattern">ECMA-262 pattern the value must match, anchored.</param>
+/// <param name="DefaultValue">
+/// What the executor resolves when the ticket carries no value, which is why every request field
+/// is always available to a required variable.
+/// </param>
+public sealed record TicketRequestFieldDefinition(string Source, string Pattern, string DefaultValue);
 
 /// <summary>Leaf names that select one normalizer.</summary>
 /// <param name="Kind">One of <see cref="VariableCatalog.ValueKinds"/>, never <c>text</c>.</param>

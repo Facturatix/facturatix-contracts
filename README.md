@@ -20,7 +20,7 @@ and both implementations of the validator must reproduce the same verdict on it.
 | Namespace / module                          | Contents                                                                                                                                   |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `schemas/recipe-execution.schema.v2.json`   | The recipe execution contract v2 (JSON Schema 2020-12) plus the semantic rules it cannot express                                           |
-| `schemas/fixtures/`                         | 17 fixtures and a generated manifest with each one's verdict and canonical hash                                                            |
+| `schemas/fixtures/`                         | 19 fixtures and a generated manifest with each one's verdict and canonical hash                                                            |
 | `Facturatix.Contracts.Recipes`              | `RecipeSchemaV2`, `RecipeSchemaV2Validator`, `RecipeCanonicalJson`, `RecipeContractResources`                                              |
 | `Facturatix.Contracts.Errors`               | `ApiErrorCodes` — the machine-readable `code` carried by every API `ProblemDetails`                                                        |
 | `Facturatix.Contracts.Tickets` / `.Recipes` | Ticket and recipe-version lifecycle status constants, rejection reasons, execution channels, pilot consent codes and pilot abandon reasons |
@@ -78,6 +78,12 @@ wait, wait_selector`. `dialog_accept`, `dialog_dismiss`, `popup`, `custom`, `upl
 7. **`select.options` is context, not an instruction.** It lists what the portal's `<select>`
    offered when the step was recorded, so whoever decides the value from a ticket chooses among
    the portal's real choices. The executor still selects exactly `value`.
+8. **A variable's `source` is one of three namespaces or one exact name.** `user.*` and
+   `user.fiscal.*` are what the platform stores about the account holder, `ticket.extracted.*` is
+   what it reads off the ticket image, and `ticket.cfdi_use` is the CFDI use the account holder
+   chose when uploading the ticket. That last one is not under `ticket.extracted.` on purpose: it
+   is a choice a person made, not something printed on the ticket, so the vision model is never
+   asked for it.
 
 ## Canonical hash
 
@@ -224,6 +230,26 @@ dotnet run --project tools/generate-manifest -- schemas/fixtures
 - **PATCH** — new constants, clarified messages
 - **MINOR** — new optional contract fields, new error codes
 - **MAJOR** — renaming or removing anything a consumer branches on
+
+**2.7.0** adds the variable source `ticket.cfdi_use`
+(`VARIABLE_SOURCES.TICKET_CFDI_USE` / `RecipeSchemaV2.VariableSources.TicketCfdiUse`): the SAT
+`c_UsoCFDI` code the account holder chose when uploading the ticket. Until now the choice had no
+source, so no recipe could reference it: a recipe carried whatever use was selected while it was
+recorded, the portal received that one for every user, and the ticket still recorded the use the
+user had asked for. A user who chose `D01` for a medical expense got an invoice issued under the
+recorded `S01` and a screen saying `D01`. With a source, a recipe renders the choice into the
+portal's own `select` or `fill`, and the executor can record the use it actually sent.
+
+The schema names the source exactly rather than opening a `ticket.*` namespace, so a misspelling
+is `variable_source_unknown` at validation instead of a variable that resolves to nothing on a
+worker. The variable catalogue gains `ticket_request_fields`, mirrored by `TICKET_REQUEST_FIELDS`
+and `VariableCatalog.TicketRequestFields`: for each value supplied with a ticket, the `pattern` it
+must match before it may reach a portal and the `default_value` the executor resolves when the
+ticket carries none (`^[A-Z]{1,2}[0-9]{2}$` and `G03`). The pattern is the shape of the SAT's codes,
+not their membership — which uses exist and which a tax regime may declare is validated by the
+service that owns the upload. MINOR because it is additive: no existing document changes meaning
+and no canonical hash moves. Two fixtures join the corpus, a recipe that binds the CFDI use to a
+select and one whose `ticket.*` sources are not in the contract.
 
 **2.6.0** lets a `select` action carry `options`: every choice the portal's `<select>` offered
 when the step was recorded, as `{ "value", "label" }` pairs in the portal's order, at most

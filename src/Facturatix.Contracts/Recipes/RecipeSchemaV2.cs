@@ -136,9 +136,13 @@ public static class RecipeSchemaV2
     }
 
     /// <summary>
-    /// Namespaces a variable value may come from. Anything else is rejected at validation time,
-    /// so the executor never has to guess where a value should have come from.
+    /// Where a variable value may come from. Anything else is rejected at validation time, so the
+    /// executor never has to guess where a value should have come from.
     /// </summary>
+    /// <remarks>
+    /// Three namespaces — what the platform stores about the account holder and what it reads off
+    /// the ticket image — and one exact source outside them, <see cref="TicketCfdiUse"/>.
+    /// </remarks>
     public static class VariableSources
     {
         /// <summary>Account-level data (e.g. <c>user.email</c>).</summary>
@@ -149,6 +153,19 @@ public static class RecipeSchemaV2
 
         /// <summary>Data extracted from the ticket image (e.g. <c>ticket.extracted.total</c>).</summary>
         public const string TicketExtractedPrefix = "ticket.extracted.";
+
+        /// <summary>
+        /// The CFDI use the account holder chose when uploading the ticket (<c>G03</c>,
+        /// <c>D01</c>, <c>S01</c>…).
+        /// </summary>
+        /// <remarks>
+        /// An exact source, not a namespace: it is a choice the user made, not a value read off the
+        /// image, and it deliberately does not start with <see cref="TicketExtractedPrefix"/> —
+        /// everything under that prefix is asked of the vision model, persisted as an extracted
+        /// field and shown to the user as "what we read from your ticket". None of that is true of
+        /// this value.
+        /// </remarks>
+        public const string TicketCfdiUse = "ticket.cfdi_use";
 
         /// <summary>The e-mail address a portal delivers the invoice to.</summary>
         public const string UserFiscalEmail = "user.fiscal.email";

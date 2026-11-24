@@ -59,7 +59,7 @@ export interface RecipeValidationResult {
 
 const VARIABLE_NAME_PATTERN = /^[a-z][a-z0-9_]*$/
 const VARIABLE_SOURCE_PATTERN =
-  /^(user\.fiscal\.[a-z][a-z0-9_]*|user\.[a-z][a-z0-9_]*|ticket\.extracted\.[a-z][a-z0-9_]*)$/
+  /^(user\.fiscal\.[a-z][a-z0-9_]*|user\.[a-z][a-z0-9_]*|ticket\.extracted\.[a-z][a-z0-9_]*|ticket\.cfdi_use)$/
 const PLACEHOLDER_PATTERN = /\{\{\s*([A-Za-z0-9_.]+)\s*\}\}/g
 
 const COMMON_ACTION_PROPERTIES = [
@@ -230,7 +230,7 @@ function validateVariables(
         issue(
           CODES.VARIABLE_SOURCE_UNKNOWN,
           `${path}.source`,
-          'A variable source must be under user.*, user.fiscal.* or ticket.extracted.*.'
+          'A variable source must be under user.*, user.fiscal.* or ticket.extracted.*, or be ticket.cfdi_use.'
         )
       )
     } else {

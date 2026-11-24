@@ -1,0 +1,49 @@
+{
+  "schema_version": 2,
+  "variables": [
+    { "name": "rfc", "source": "user.fiscal.rfc", "required": true },
+    { "name": "uso_cfdi", "source": "ticket.cfdi_use", "required": true },
+    { "name": "folio", "source": "ticket.extracted.folio", "required": true }
+  ],
+  "actions": [
+    { "id": "open", "action": "goto", "url": "https://facturacion.comercio.mx/" },
+    {
+      "id": "type-rfc",
+      "action": "fill",
+      "locator": { "strategy": "role", "role": "textbox", "name": "RFC" },
+      "value": "{{rfc}}"
+    },
+    {
+      "id": "type-folio",
+      "action": "fill",
+      "locator": { "strategy": "role", "role": "textbox", "name": "FOLIO" },
+      "value": "{{folio}}"
+    },
+    {
+      "id": "choose-cfdi-use",
+      "action": "select",
+      "locator": { "strategy": "role", "role": "combobox", "name": "Uso de CFDI" },
+      "value": "{{uso_cfdi}}",
+      "options": [
+        { "value": "G01", "label": "G01 - Adquisición de mercancías" },
+        { "value": "G03", "label": "G03 - Gastos en general" },
+        { "value": "D01", "label": "D01 - Honorarios médicos, dentales y gastos hospitalarios" },
+        { "value": "S01", "label": "S01 - Sin efectos fiscales" }
+      ]
+    },
+    {
+      "id": "submit",
+      "action": "click",
+      "locator": { "strategy": "role", "role": "button", "name": "Facturar" }
+    }
+  ],
+  "edges": [
+    { "from": "open", "to": "type-rfc" },
+    { "from": "type-rfc", "to": "type-folio" },
+    { "from": "type-folio", "to": "choose-cfdi-use" },
+    { "from": "choose-cfdi-use", "to": "submit" }
+  ],
+  "completion": {
+    "assertions": [{ "type": "url_matches", "pattern": "/confirmacion" }]
+  }
+}

@@ -20,6 +20,16 @@ import {
 } from './variable-catalog.js'
 
 /**
+ * One ticket request field as the artefact spells it. The artefact is snake_case throughout; the
+ * mirror in `variable-catalog.ts` exposes the same three facts as `TicketRequestFieldDefinition`.
+ */
+export interface TicketRequestFieldEntry {
+  source: string
+  pattern: string
+  default_value: string
+}
+
+/**
  * A fixture's expected outcome, as recorded in `schemas/fixtures/manifest.json`.
  *
  * The manifest is generated from the C# reference implementation, never hand-written: a hash typed
@@ -87,6 +97,7 @@ export interface VariableCatalogDocument {
     default_value_kind: TicketValueKind
     value_kinds: TicketValueKindDefinition[]
   }
+  ticket_request_fields: { fields: TicketRequestFieldEntry[] }
 }
 
 /**
