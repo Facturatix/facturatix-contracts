@@ -73,6 +73,13 @@ export const API_ERROR_CODES = {
   TICKET_NOT_DELETABLE: 'ticket_not_deletable',
   /** The account reached its plan limit for the current month. */
   QUOTA_EXCEEDED: 'quota_exceeded',
+  /**
+   * The account cannot be invoiced yet: it has no fiscal data, or its fiscal data carries no
+   * e-mail for the merchant to send the invoice to. The upload was refused before anything was
+   * stored, so it does not count against the plan. One code for both cases: the recovery is the
+   * same, and a client that wants to say which part is missing already holds the profile.
+   */
+  FISCAL_DATA_REQUIRED: 'fiscal_data_required',
   STEP_SCREENSHOT_NOT_FOUND: 'step_screenshot_not_found',
   CONFIRMATION_NOT_FOUND: 'confirmation_not_found',
   TICKET_NOT_UNDER_REVIEW: 'ticket_not_under_review',

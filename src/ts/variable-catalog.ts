@@ -72,7 +72,11 @@ export type UserFieldSupport = 'bindable' | 'stored_only'
  * Whether the platform can promise the field has a value.
  *
  * `always` — every write path validates it as non-empty, so a completed fiscal profile has it. A
- * required variable bound to one of these cannot fail resolution for want of a value.
+ * required variable bound to one of these cannot fail resolution for want of a value. The fiscal
+ * e-mail joined this group in 2.8.0: it is where the merchant sends the invoice, so the API
+ * requires it when the profile is saved and refuses a ticket from an account that lacks it
+ * (`fiscal_data_required`). A profile saved before that rule can still be missing it, and such an
+ * account cannot upload until it is completed.
  *
  * `optional` — the platform accepts a profile without it. That covers the nullable columns and also
  * two that are `NOT NULL` and still reachable as an empty string: `user.email` and `user.name` come
@@ -104,7 +108,7 @@ export const USER_FIELDS: readonly UserFieldDefinition[] = [
   { source: 'user.fiscal.rfc', support: 'bindable', availability: 'always' },
   { source: 'user.fiscal.legal_name', support: 'bindable', availability: 'always' },
   { source: 'user.fiscal.tax_regime', support: 'bindable', availability: 'always' },
-  { source: 'user.fiscal.email', support: 'bindable', availability: 'optional' },
+  { source: 'user.fiscal.email', support: 'bindable', availability: 'always' },
   { source: 'user.fiscal.postal_code', support: 'bindable', availability: 'always' },
   { source: 'user.fiscal.street', support: 'bindable', availability: 'optional' },
   { source: 'user.fiscal.exterior_number', support: 'bindable', availability: 'optional' },

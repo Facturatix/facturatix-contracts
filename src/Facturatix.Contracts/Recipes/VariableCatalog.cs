@@ -58,7 +58,9 @@ public static class VariableCatalog
 
     /// <summary>Whether the platform can promise the field has a value.</summary>
     /// <remarks>
-    /// <c>always</c> — every write path validates it as non-empty. <c>optional</c> — the platform
+    /// <c>always</c> — every write path validates it as non-empty; since 2.8.0 that includes the
+    /// fiscal e-mail, which the API also requires of an account before it accepts a ticket
+    /// (<see cref="Errors.ApiErrorCodes.FiscalDataRequired"/>). <c>optional</c> — the platform
     /// accepts a profile without it, which covers the nullable columns and also <c>user.email</c>
     /// and <c>user.name</c>: both are <c>NOT NULL</c> and both arrive through a helper whose
     /// documented contract is "a value that fits, possibly empty".
@@ -90,7 +92,7 @@ public static class VariableCatalog
         new UserFieldDefinition("user.fiscal.rfc", Support.Bindable, Availability.Always),
         new UserFieldDefinition("user.fiscal.legal_name", Support.Bindable, Availability.Always),
         new UserFieldDefinition("user.fiscal.tax_regime", Support.Bindable, Availability.Always),
-        new UserFieldDefinition("user.fiscal.email", Support.Bindable, Availability.Optional),
+        new UserFieldDefinition("user.fiscal.email", Support.Bindable, Availability.Always),
         new UserFieldDefinition("user.fiscal.postal_code", Support.Bindable, Availability.Always),
         new UserFieldDefinition("user.fiscal.street", Support.Bindable, Availability.Optional),
         new UserFieldDefinition(

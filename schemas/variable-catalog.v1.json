@@ -9,7 +9,7 @@
       { "source": "user.fiscal.rfc", "support": "bindable", "availability": "always" },
       { "source": "user.fiscal.legal_name", "support": "bindable", "availability": "always" },
       { "source": "user.fiscal.tax_regime", "support": "bindable", "availability": "always" },
-      { "source": "user.fiscal.email", "support": "bindable", "availability": "optional" },
+      { "source": "user.fiscal.email", "support": "bindable", "availability": "always" },
       { "source": "user.fiscal.postal_code", "support": "bindable", "availability": "always" },
       { "source": "user.fiscal.street", "support": "bindable", "availability": "optional" },
       { "source": "user.fiscal.exterior_number", "support": "bindable", "availability": "optional" },

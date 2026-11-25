@@ -135,6 +135,18 @@ public static class ApiErrorCodes
     /// <summary>The account reached its plan limit for the current month.</summary>
     public const string QuotaExceeded = "quota_exceeded";
 
+    /// <summary>
+    /// The account cannot be invoiced yet: it has no fiscal data, or its fiscal data carries no
+    /// e-mail for the merchant to send the invoice to. The upload was refused before anything was
+    /// stored, so it does not count against the plan.
+    /// </summary>
+    /// <remarks>
+    /// One code for both cases on purpose. The recovery is the same — complete the fiscal profile
+    /// and upload again — and a client that wants to say which part is missing already holds the
+    /// profile it would send the user to.
+    /// </remarks>
+    public const string FiscalDataRequired = "fiscal_data_required";
+
     /// <summary>No screenshot exists for that step index.</summary>
     public const string StepScreenshotNotFound = "step_screenshot_not_found";
 
@@ -230,7 +242,8 @@ public static class ApiErrorCodes
         PilotMemberAmbiguous, PilotMemberNotFound, PromotionBlockedNoDecidedTickets,
         PromotionBlockedUnresolvedPortalAttempts,
         TicketNotFound, InvalidImageFormat, ImageTooLarge, TicketImageNotFound, NotOwner,
-        TicketNotDeletable, QuotaExceeded, StepScreenshotNotFound, ConfirmationNotFound,
+        TicketNotDeletable, QuotaExceeded, FiscalDataRequired, StepScreenshotNotFound,
+        ConfirmationNotFound,
         TicketNotUnderReview, TicketAlreadyInvoiced, TicketPortalVerdictRequired,
         TicketPortalVerdictForbidsFail,
         UserNotFound, InvalidName, PhotoNotFound,
