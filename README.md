@@ -231,6 +231,22 @@ dotnet run --project tools/generate-manifest -- schemas/fixtures
 - **MINOR** — new optional contract fields, new error codes
 - **MAJOR** — renaming or removing anything a consumer branches on
 
+**2.8.0** adds the error code `fiscal_data_required`
+(`API_ERROR_CODES.FISCAL_DATA_REQUIRED` / `ApiErrorCodes.FiscalDataRequired`) and moves
+`user.fiscal.email` from `optional` to `always` in the variable catalogue. Both are one decision.
+A ticket used to be accepted from an account with no fiscal data, or with fiscal data and no
+e-mail: the executor then stopped at `variable_missing` or `delivery_destination_invalid`, the
+ticket went to review, it had already counted against the plan, and no rejection reason said
+honestly what was wrong. The API now refuses that upload with its own code, before anything is
+stored, and requires the fiscal e-mail when the profile is saved — it is where the merchant sends
+the invoice, and the destination every `portal_email` recipe hands to the portal. A client
+branches on the code to send the user to their profile instead of showing a generic 403.
+
+With both rules in place a ticket that reaches a recipe belongs to an account whose fiscal e-mail
+has a value, which is what `always` promises. A profile saved before 2.8.0 may still lack it; that
+account cannot upload until it completes it. MINOR: a new code is additive, and the availability
+change strengthens a promise without changing what any document means or moving a canonical hash.
+
 **2.7.0** adds the variable source `ticket.cfdi_use`
 (`VARIABLE_SOURCES.TICKET_CFDI_USE` / `RecipeSchemaV2.VariableSources.TicketCfdiUse`): the SAT
 `c_UsoCFDI` code the account holder chose when uploading the ticket. Until now the choice had no

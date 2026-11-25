@@ -32,10 +32,18 @@
       2.6.0 lets a `select` action carry `options`, the choices the portal listed when the step was
       recorded, so the value a ticket decides is one of the portal's real choices. Additive — a
       document without `options` validates and hashes exactly as before.
+
+      2.7.0 adds the variable source `ticket.cfdi_use`, the CFDI use chosen with the ticket, and
+      the catalogue's `ticket_request_fields`. Additive.
+
+      2.8.0 adds the error code `fiscal_data_required` and moves `user.fiscal.email` to `always`
+      in the variable catalogue: the API requires the e-mail when a fiscal profile is saved and
+      refuses a ticket from an account that cannot be invoiced. Additive — a new code, and a
+      promise that became stronger.
     -->
-    <Version>2.7.0</Version>
-    <AssemblyVersion>2.6.0.0</AssemblyVersion>
-    <FileVersion>2.6.0.0</FileVersion>
+    <Version>2.8.0</Version>
+    <AssemblyVersion>2.8.0.0</AssemblyVersion>
+    <FileVersion>2.8.0.0</FileVersion>
 
     <!-- NuGet package metadata -->
     <Authors>Facturatix</Authors>
