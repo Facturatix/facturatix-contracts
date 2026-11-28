@@ -49,12 +49,12 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.20.5",
-    "eslint": "^10.15.0",
-    "eslint-config-prettier": "^10.1.8",
+    "eslint": "^10.16.0",
+    "eslint-config-prettier": "^10.1.9",
     "eslint-plugin-prettier": "^5.5.7",
     "prettier": "^3.10.1",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.73.0"
+    "typescript-eslint": "^8.74.0"
   },
   "packageManager": "pnpm@11.17.0+sha512.cca3cea332ad254bb84145f966d19f4879615210346fc92c79a047f23a0d7b3cca3c3792f0076ba1f1831d277efbcf0a9119b31a9a60eca7fb3d6231f331ef72",
   "engines": {
